@@ -15,8 +15,9 @@ public class Page {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "site_id", nullable = false)
-    private int siteId;
+    @JoinColumn(name = "site_id", nullable = false)
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Website website;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String path;
