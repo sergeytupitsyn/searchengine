@@ -8,7 +8,7 @@ import javax.persistence.*;
 @Setter
 @Getter
 @Entity
-@Table(name = "Pages")
+@Table(name = "Pages", indexes = {@Index(columnList = "path", name = "path_index")})
 public class Page {
 
     @Id
@@ -19,7 +19,7 @@ public class Page {
     @ManyToOne(cascade = CascadeType.ALL)
     private Website website;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String path;
 
     @Column(nullable = false)
