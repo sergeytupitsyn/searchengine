@@ -16,7 +16,7 @@ public class Page {
     private int id;
 
     @JoinColumn(name = "site_id", nullable = false)
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.MERGE)
     private Website website;
 
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)
@@ -27,4 +27,11 @@ public class Page {
 
     @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;
+
+    public Page(Website website, String path, int code, String content) {
+        this.website = website;
+        this.path = path;
+        this.code = code;
+        this.content = content;
+    }
 }

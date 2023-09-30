@@ -31,4 +31,11 @@ public class Website {
 
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String name;
+
+    public Website(IndexingStatus status, LocalDateTime statusTime, String url, String name) {
+        this.status = status;
+        this.statusTime = statusTime;
+        this.url = url;
+        this.name = name;
+    }
 }
