@@ -15,6 +15,9 @@ public class Page {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    public Page() {
+    }
+
     @JoinColumn(name = "site_id", nullable = false)
     @ManyToOne(cascade = CascadeType.MERGE)
     private Website website;

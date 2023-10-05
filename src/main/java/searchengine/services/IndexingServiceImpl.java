@@ -30,8 +30,15 @@ public class IndexingServiceImpl implements IndexingService {
     public void startIndexing() {
         for (Site site : sites.getSites()) {
             Website website = new Website(INDEXING, LocalDateTime.now(), site.getUrl(), site.getName());
+            Website websiteToDelete = websiteRepository.findWebsiteByUrl(website.getUrl());
+            if(websiteToDelete != null ) {
+                int websiteIdToDelete = websiteToDelete.getId();
+                pageRepository.deleteByWebsite(websiteToDelete);
+                websiteRepository.deleteById(websiteIdToDelete);
+            }
+
             websiteRepository.save(website);
-            Boolean isIndexing = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository));
+            //Boolean isIndexing = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository));
         }
     }
 
