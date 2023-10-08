@@ -50,16 +50,24 @@ public class RecursiveSearch extends RecursiveTask <Boolean> {
         if (!isPageInDB(link)) {
             sleep(100);
             Document doc = Jsoup.connect(link).timeout(10000)
+                    .userAgent("Mozilla/5.0 (Windows; U; WindowsNT5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
+                    .referrer("http://www.google.com")
                     .ignoreHttpErrors(true)
                     .ignoreContentType(true)
                     .followRedirects(false).get();
+            Elements allElements = doc.getAllElements();
+            StringBuilder content = new StringBuilder();
+            for (Element element : allElements) {
+                content.append(element.data()).append("\n");
+            }
+            String path = link.substring(website.getUrl().length());
+            Page page = new Page(website, path, 200, content.toString());
+            pageRepository.save(page);
             Elements elements = doc.select("a[href]");
             for (Element element : elements) {
                 String link1 = element.attr("abs:href");
                 if (link1.startsWith(link) && link1.endsWith("/") && !list.contains(link1) && !link.equals(link1)) {
                     list.add(link1);
-                    Page page = new Page(website, link1, 200, "");
-                    pageRepository.save(page);
                 }
             }
         }

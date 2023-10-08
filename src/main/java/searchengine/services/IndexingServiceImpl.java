@@ -38,7 +38,7 @@ public class IndexingServiceImpl implements IndexingService {
             }
 
             websiteRepository.save(website);
-            //Boolean isIndexing = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository));
+            Boolean isIndexing = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository));
         }
     }
 
