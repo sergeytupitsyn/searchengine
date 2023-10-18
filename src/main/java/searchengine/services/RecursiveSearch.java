@@ -17,7 +17,7 @@ import java.util.concurrent.RecursiveTask;
 
 import static java.lang.Thread.sleep;
 
-public class RecursiveSearch extends RecursiveAction {
+public class RecursiveSearch extends RecursiveTask<ArrayList<RecursiveSearch>> {
     private final Website website;
     private final String link;
     private final PageRepository pageRepository;
@@ -30,7 +30,7 @@ public class RecursiveSearch extends RecursiveAction {
     }
 
     @Override
-    protected void compute() {
+    protected ArrayList<RecursiveSearch> compute() {
 
         ArrayList<RecursiveSearch> tasks = new ArrayList<RecursiveSearch>();
         ArrayList<String> linksThisPage = new ArrayList<>();
@@ -46,6 +46,7 @@ public class RecursiveSearch extends RecursiveAction {
                 tasks.add(task);
             }
         }
+        return tasks;
     }
 
     public ArrayList<String> pageParser(String link) throws IOException, InterruptedException {
