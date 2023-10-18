@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.ForkJoinPool;
 
+import static searchengine.model.IndexingStatus.INDEXED;
 import static searchengine.model.IndexingStatus.INDEXING;
 
 @Service
@@ -36,9 +37,9 @@ public class IndexingServiceImpl implements IndexingService {
                 pageRepository.deleteByWebsite(websiteToDelete);
                 websiteRepository.deleteById(websiteIdToDelete);
             }
-
             websiteRepository.save(website);
-            Boolean isIndexing = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository));
+            ForkJoinPool forkJoinPool = new ForkJoinPool();
+            forkJoinPool.invoke(new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository));
         }
     }
 
