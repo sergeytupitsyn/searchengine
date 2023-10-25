@@ -5,16 +5,13 @@ import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.dto.indexing.StartIndexingResponse;
-import searchengine.model.Page;
+import searchengine.dto.indexing.StartIndexingResponseFalse;
+import searchengine.dto.indexing.StartIndexingResponseTrue;
 import searchengine.model.Website;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
 
-import java.awt.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.concurrent.ForkJoinPool;
 
 import static searchengine.model.IndexingStatus.INDEXED;
@@ -27,8 +24,10 @@ public class IndexingServiceImpl implements IndexingService {
     private final PageRepository pageRepository;
     private final WebsiteRepository websiteRepository;
     private final SitesList sites;
+    private boolean isIndexingStarted = false;
 
     public void startIndexing() {
+        isIndexingStarted = true;
         for (Site site : sites.getSites()) {
             Website website = new Website(INDEXING, LocalDateTime.now(), site.getUrl(), site.getName());
             Website websiteToDelete = websiteRepository.findWebsiteByUrl(website.getUrl());
@@ -38,27 +37,22 @@ public class IndexingServiceImpl implements IndexingService {
                 websiteRepository.deleteById(websiteIdToDelete);
             }
             websiteRepository.save(website);
-            ArrayList<RecursiveSearch> tasks = new ForkJoinPool().invoke(new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository));
-            while (!isIndexingDone(tasks)) {
-            }
+            ForkJoinPool forkJoinPool = new ForkJoinPool();
+            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
+            forkJoinPool.invoke(recursiveSearch);
             website.setStatus(INDEXED);
             websiteRepository.save(website);
         }
-    }
-
-    public boolean isIndexingDone(ArrayList<RecursiveSearch> tasks) {
-        boolean isIndexingDone = true;
-            for (RecursiveSearch task : tasks) {
-                if (!task.isDone()) {
-                    isIndexingDone = false;
-                    break;
-                }
-            }
-        return isIndexingDone;
+        isIndexingStarted = false;
     }
 
     @Override
     public StartIndexingResponse getResponse() {
-        return new StartIndexingResponse();
+        if (!isIndexingStarted) {
+            startIndexing();
+            return new StartIndexingResponseTrue();
+        } else {
+            return new StartIndexingResponseFalse();
+        }
     }
 }
