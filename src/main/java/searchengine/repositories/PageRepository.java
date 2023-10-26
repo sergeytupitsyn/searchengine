@@ -10,5 +10,8 @@ import searchengine.model.Website;
 public interface PageRepository extends JpaRepository<Page, Integer> {
 
     @Transactional
-    void deleteByWebsite (Website website);
+    void deleteByWebsite(Website website);
+
+    @Transactional
+    Page findPageByPath(String path);
 }

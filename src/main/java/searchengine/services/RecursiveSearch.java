@@ -78,7 +78,13 @@ public class RecursiveSearch extends RecursiveAction {
         return list;
     }
 
-    public static Boolean isPageInDB(String link) {
-        return false;
+    public boolean isPageInDB(String link) {
+        String path = link.substring(website.getUrl().length());
+        Page page = pageRepository.findPageByPath(path);
+        if (page == null){
+            return false;
+        }else {
+            return true;
+        }
     }
 }

@@ -12,6 +12,8 @@ import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 import static searchengine.model.IndexingStatus.INDEXED;
@@ -49,7 +51,8 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public StartIndexingResponse getResponse() {
         if (!isIndexingStarted) {
-            startIndexing();
+            Executor executor = Executors.newSingleThreadExecutor();
+            executor.execute(this::startIndexing);
             return new StartIndexingResponseTrue();
         } else {
             return new StartIndexingResponseFalse();
