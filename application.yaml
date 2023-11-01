@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    username: root
+    password: Gslsuhtpl-43
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+indexing-settings:
+  sites:
+    - url: http://www.playback.ru/
+      name: Blayback.ru
+    - url: https://www.svetlovka.ru/
+      name: Светловка
+    - url: https://dimonvideo.ru/
+      name: Dimonvideo

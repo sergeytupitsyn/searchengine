@@ -14,4 +14,7 @@ public interface PageRepository extends JpaRepository<Page, Integer> {
 
     @Transactional
     Page findPageByPath(String path);
+
+    @Transactional
+    long count();
 }

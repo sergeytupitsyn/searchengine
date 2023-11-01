@@ -42,10 +42,8 @@ public class IndexingServiceImpl implements IndexingService {
             ForkJoinPool forkJoinPool = new ForkJoinPool();
             RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
             forkJoinPool.invoke(recursiveSearch);
-            website.setStatus(INDEXED);
-            websiteRepository.save(website);
         }
-        isIndexingStarted = false;
+        finishIndexing();
     }
 
     @Override
@@ -57,5 +55,25 @@ public class IndexingServiceImpl implements IndexingService {
         } else {
             return new StartIndexingResponseFalse();
         }
+    }
+
+    public void finishIndexing() {
+        while (isIndexingStarted) {
+            long pageCount = pageRepository.count();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {}
+
+            if (pageCount == pageRepository.count()) {
+                isIndexingStarted = false;
+            }
+        }
+        sites.getSites().forEach(site -> {
+            Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
+            website.setStatusTime(LocalDateTime.now());
+            website.setStatus(INDEXED);
+            websiteRepository.save(website);
+        });
+        System.out.println("индексация завершена");
     }
 }
