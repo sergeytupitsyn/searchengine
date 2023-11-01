@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
-import searchengine.dto.indexing.StartIndexingResponse;
-import searchengine.dto.indexing.StartIndexingResponseFalse;
-import searchengine.dto.indexing.StartIndexingResponseTrue;
+import searchengine.dto.indexing.IndexingResponse;
+import searchengine.dto.indexing.IndexingResponseFalse;
+import searchengine.dto.indexing.IndexingResponseTrue;
 import searchengine.model.Website;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
@@ -47,13 +47,22 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     @Override
-    public StartIndexingResponse getResponse() {
+    public IndexingResponse getStartResponse() {
         if (!isIndexingStarted) {
             Executor executor = Executors.newSingleThreadExecutor();
             executor.execute(this::startIndexing);
-            return new StartIndexingResponseTrue();
+            return new IndexingResponseTrue();
         } else {
-            return new StartIndexingResponseFalse();
+            return new IndexingResponseFalse("Индексация уже запущена");
+        }
+    }
+
+    @Override
+    public IndexingResponse getStopResponse() {
+        if (isIndexingStarted) {
+            return new IndexingResponseTrue();
+        } else {
+            return new IndexingResponseFalse("Индексация не запущена");
         }
     }
 
@@ -74,6 +83,5 @@ public class IndexingServiceImpl implements IndexingService {
             website.setStatus(INDEXED);
             websiteRepository.save(website);
         });
-        System.out.println("индексация завершена");
     }
 }

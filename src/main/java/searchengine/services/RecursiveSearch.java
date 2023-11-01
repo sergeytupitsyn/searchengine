@@ -45,7 +45,7 @@ public class RecursiveSearch extends RecursiveAction {
 
     public ArrayList<String> pageParser(String parentLink) throws IOException, InterruptedException {
         ArrayList<String> linkList = new ArrayList<String>();
-        sleep(100);
+        sleep(10000);
         Document doc = Jsoup.connect(parentLink).timeout(10000)
                 .userAgent("Mozilla/5.0 (Windows; U; WindowsNT5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
                 .referrer("http://www.google.com")

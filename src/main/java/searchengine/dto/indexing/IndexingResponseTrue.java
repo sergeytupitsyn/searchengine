@@ -3,6 +3,6 @@ package searchengine.dto.indexing;
 import lombok.Data;
 
 @Data
-public class StartIndexingResponseTrue extends StartIndexingResponse{
+public class IndexingResponseTrue extends IndexingResponse {
     private boolean result = true;
 }
