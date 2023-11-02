@@ -7,17 +7,18 @@ import searchengine.config.SitesList;
 import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.indexing.IndexingResponseFalse;
 import searchengine.dto.indexing.IndexingResponseTrue;
+import searchengine.model.IndexingStatus;
 import searchengine.model.Website;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
-
 import java.time.LocalDateTime;
+import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
-import static searchengine.model.IndexingStatus.INDEXED;
-import static searchengine.model.IndexingStatus.INDEXING;
+import static searchengine.model.IndexingStatus.*;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +28,7 @@ public class IndexingServiceImpl implements IndexingService {
     private final WebsiteRepository websiteRepository;
     private final SitesList sites;
     private boolean isIndexingStarted = false;
+    AbstractList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
 
     public void startIndexing() {
         isIndexingStarted = true;
@@ -40,10 +42,11 @@ public class IndexingServiceImpl implements IndexingService {
             }
             websiteRepository.save(website);
             ForkJoinPool forkJoinPool = new ForkJoinPool();
+            forkJoinPoolList.add(forkJoinPool);
             RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
             forkJoinPool.invoke(recursiveSearch);
         }
-        finishIndexing();
+        finishIndexing(INDEXED, "");
     }
 
     @Override
@@ -59,14 +62,17 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse getStopResponse() {
+        forkJoinPoolList.forEach(ForkJoinPool::shutdown);
         if (isIndexingStarted) {
+            finishIndexing(FAILED, "Индексация остановлена пользователем");
             return new IndexingResponseTrue();
+
         } else {
             return new IndexingResponseFalse("Индексация не запущена");
         }
     }
 
-    public void finishIndexing() {
+    public void finishIndexing(IndexingStatus status, String lastError) {
         while (isIndexingStarted) {
             long pageCount = pageRepository.count();
             try {
@@ -80,7 +86,8 @@ public class IndexingServiceImpl implements IndexingService {
         sites.getSites().forEach(site -> {
             Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
             website.setStatusTime(LocalDateTime.now());
-            website.setStatus(INDEXED);
+            website.setStatus(status);
+            website.setLastError(lastError);
             websiteRepository.save(website);
         });
     }
