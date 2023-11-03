@@ -22,3 +22,12 @@ indexing-settings:
       name: Светловка
     - url: https://dimonvideo.ru/
       name: Dimonvideo
+
+jsoup-setting:
+  jsoup:
+    timeout: 1000
+    userAgent: "Mozilla/5.0 (Windows; U; WindowsNT5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6"
+    referrer: "http://www.google.com"
+    ignoreHttpErrors: true
+    ignoreContentType: true
+    followRedirects: false

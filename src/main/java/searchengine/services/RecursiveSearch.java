@@ -4,6 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import searchengine.model.Page;
 import searchengine.model.Website;
 import searchengine.repositories.PageRepository;
@@ -28,7 +29,6 @@ public class RecursiveSearch extends RecursiveAction {
 
     @Override
     protected void compute() {
-
         ArrayList<String> linksThisPage;
         try {
             linksThisPage = pageParser(parentLink);
@@ -43,32 +43,26 @@ public class RecursiveSearch extends RecursiveAction {
         }
     }
 
+    @ConfigurationProperties(prefix = "jsoup-setting")
     public ArrayList<String> pageParser(String parentLink) throws IOException, InterruptedException {
         ArrayList<String> linkList = new ArrayList<String>();
         sleep(100);
-        Document doc = Jsoup.connect(parentLink).timeout(10000)
-                .userAgent("Mozilla/5.0 (Windows; U; WindowsNT5.1; en-US; rv1.8.1.6) Gecko/20070725 Firefox/2.0.0.6")
-                .referrer("http://www.google.com")
-                .ignoreHttpErrors(true)
-                .ignoreContentType(true)
-                .followRedirects(false).get();
-        Elements allElements = doc.getAllElements();
+        int responseCode = Jsoup.connect(parentLink).execute().statusCode();
         StringBuilder content = new StringBuilder();
-        for (Element element : allElements) {
-            content.append(element.data()).append("\n");
-            if (content.capacity() > 10000) {
-                break;
-            }
+        if (responseCode == 200) {
+            Document doc = Jsoup.connect(parentLink).get();
+            Elements allElements = doc.getAllElements();
+            allElements.forEach(element -> content.append(element.data()).append("\n"));
+            Elements elements = doc.select("a[href]");
+            elements.forEach(element -> {
+                String link = element.attr("abs:href");
+                if (!isPageInDB(link) && link.startsWith(parentLink) && !linkList.contains(link) && !link.equals(parentLink)) {
+                    linkList.add(link);
+                }
+            });
         }
-        Page page = new Page(website, parentLink, 200, content.toString());
+        Page page = new Page(website, parentLink,responseCode, content.toString());
         pageRepository.save(page);
-        Elements elements = doc.select("a[href]");
-        for (Element element : elements) {
-            String link = element.attr("abs:href");
-            if (!isPageInDB(link) && link.startsWith(parentLink) && !linkList.contains(link) && !link.equals(parentLink)) {
-                linkList.add(link);
-            }
-        }
         return linkList;
     }
 

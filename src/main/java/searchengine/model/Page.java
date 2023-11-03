@@ -28,7 +28,7 @@ public class Page {
     @Column(nullable = false)
     private int code;
 
-    @Column(columnDefinition = "MEDIUMTEXT", nullable = false)
+    @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String content;
 
     public Page(Website website, String path, int code, String content) {
