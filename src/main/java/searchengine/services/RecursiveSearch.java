@@ -11,6 +11,7 @@ import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
@@ -46,6 +47,7 @@ public class RecursiveSearch extends RecursiveAction {
     @ConfigurationProperties(prefix = "jsoup-setting")
     public ArrayList<String> pageParser(String parentLink) throws IOException, InterruptedException {
         ArrayList<String> linkList = new ArrayList<String>();
+        String path = parentLink.substring(website.getUrl().length() - 1);
         sleep(100);
         int responseCode = Jsoup.connect(parentLink).execute().statusCode();
         StringBuilder content = new StringBuilder();
@@ -56,18 +58,28 @@ public class RecursiveSearch extends RecursiveAction {
             Elements elements = doc.select("a[href]");
             elements.forEach(element -> {
                 String link = element.attr("abs:href");
-                if (!isPageInDB(link) && link.startsWith(parentLink) && !linkList.contains(link) && !link.equals(parentLink)) {
+                if (link.startsWith(parentLink) && !linkList.contains(link) && !link.equals(parentLink) && !link.endsWith("#")) {
                     linkList.add(link);
                 }
             });
         }
-        Page page = new Page(website, parentLink,responseCode, content.toString());
-        pageRepository.save(page);
+        Page page = new Page(website, path, responseCode, content.toString());
+        savePage(page);
+        website.setStatusTime(LocalDateTime.now());
+        websiteRepository.save(website);
         return linkList;
     }
 
-    public boolean isPageInDB(String link) {
-        Page page = pageRepository.findPageByPath(link);
-        return page != null;
+    public boolean isPageInDB(String path) {
+        ArrayList<Page> pagesInDB = pageRepository.findAllPageByPath(path);
+        ArrayList<Integer> websitesId = new ArrayList<>();
+        pagesInDB.forEach(page -> websitesId.add(page.getWebsite().getId()));
+        return !pagesInDB.isEmpty() && websitesId.contains(website.getId());
+    }
+
+    public synchronized void savePage(Page page) {
+        if (!isPageInDB(page.getPath())) {
+            pageRepository.save(page);
+        }
     }
 }

@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.Page;
 import searchengine.model.Website;
 
+import java.util.ArrayList;
+
 @Repository
 public interface PageRepository extends JpaRepository<Page, Integer> {
 
@@ -13,7 +15,7 @@ public interface PageRepository extends JpaRepository<Page, Integer> {
     void deleteByWebsite(Website website);
 
     @Transactional
-    Page findPageByPath(String path);
+    ArrayList<Page> findAllPageByPath(String path);
 
     @Transactional
     long count();
