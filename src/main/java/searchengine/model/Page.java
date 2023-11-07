@@ -8,15 +8,12 @@ import javax.persistence.*;
 @Setter
 @Getter
 @Entity
-@Table(name = "Pages", indexes = {@Index(columnList = "path", name = "path_index")})
+@Table(name = "page", indexes = {@Index(columnList = "path", name = "path_index")})
 public class Page {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-
-    public Page() {
-    }
 
     @JoinColumn(name = "site_id", nullable = false)
     @ManyToOne(cascade = CascadeType.MERGE)
@@ -30,6 +27,9 @@ public class Page {
 
     @Column(columnDefinition = "LONGTEXT", nullable = false)
     private String content;
+
+    public Page() {
+    }
 
     public Page(Website website, String path, int code, String content) {
         this.website = website;
