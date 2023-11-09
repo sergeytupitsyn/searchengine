@@ -3,13 +3,12 @@ package searchengine.model;
 import lombok.Getter;
 import lombok.Setter;
 
-
 import javax.persistence.*;
 
 @Setter
 @Getter
 @Entity
-@Table(name = "'index'")
+@Table(name = "`index`")
 public class SearchIndex {
 
     @Id
@@ -24,6 +23,6 @@ public class SearchIndex {
     @ManyToOne(cascade = CascadeType.MERGE)
     private Lemma lemma;
 
-    @Column(name = "'rank'", nullable = false)
+    @Column(name = "`rank`", nullable = false)
     private float rank;
 }
