@@ -12,7 +12,6 @@ import searchengine.model.Website;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
 import java.time.LocalDateTime;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -28,26 +27,7 @@ public class IndexingServiceImpl implements IndexingService {
     private final WebsiteRepository websiteRepository;
     private final SitesList sites;
     private boolean isIndexingStarted = false;
-    AbstractList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
-
-    public void startIndexing() {
-        isIndexingStarted = true;
-        for (Site site : sites.getSites()) {
-            Website website = new Website(INDEXING, LocalDateTime.now(), site.getUrl(), site.getName());
-            Website websiteToDelete = websiteRepository.findWebsiteByUrl(website.getUrl());
-            if(websiteToDelete != null ) {
-                int websiteIdToDelete = websiteToDelete.getId();
-                pageRepository.deleteByWebsite(websiteToDelete);
-                websiteRepository.deleteById(websiteIdToDelete);
-            }
-            websiteRepository.save(website);
-            ForkJoinPool forkJoinPool = new ForkJoinPool();
-            forkJoinPoolList.add(forkJoinPool);
-            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
-            forkJoinPool.invoke(recursiveSearch);
-        }
-        finishIndexing(INDEXED, "");
-    }
+    ArrayList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
 
     @Override
     public IndexingResponse getStartResponse() {
@@ -70,6 +50,31 @@ public class IndexingServiceImpl implements IndexingService {
         } else {
             return new IndexingResponseFalse("Индексация не запущена");
         }
+    }
+
+    @Override
+    public IndexingResponse getIndexPageResponse(String url) {
+        System.out.println(url);
+        return new IndexingResponseTrue();
+    }
+
+    public void startIndexing() {
+        isIndexingStarted = true;
+        for (Site site : sites.getSites()) {
+            Website website = new Website(INDEXING, LocalDateTime.now(), site.getUrl(), site.getName());
+            Website websiteToDelete = websiteRepository.findWebsiteByUrl(website.getUrl());
+            if(websiteToDelete != null ) {
+                int websiteIdToDelete = websiteToDelete.getId();
+                pageRepository.deleteByWebsite(websiteToDelete);
+                websiteRepository.deleteById(websiteIdToDelete);
+            }
+            websiteRepository.save(website);
+            ForkJoinPool forkJoinPool = new ForkJoinPool();
+            forkJoinPoolList.add(forkJoinPool);
+            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
+            forkJoinPool.invoke(recursiveSearch);
+        }
+        finishIndexing(INDEXED, "");
     }
 
     public void finishIndexing(IndexingStatus status, String lastError) {
