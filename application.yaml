@@ -16,10 +16,6 @@ spring:
 
 indexing-settings:
   sites:
-    - url: http://www.playback.ru/
-      name: Blayback.ru
-    - url: https://www.svetlovka.ru/
-      name: Светловка
     - url: https://dimonvideo.ru/
       name: Dimonvideo
 

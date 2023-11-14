@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -49,12 +50,12 @@ public class RecursiveSearch extends RecursiveAction {
         ArrayList<String> linkList = new ArrayList<String>();
         String path = parentLink.substring(website.getUrl().length() - 1);
         sleep(100);
-        int responseCode = Jsoup.connect(parentLink).execute().statusCode();
-        StringBuilder content = new StringBuilder();
+        Connection.Response response = Jsoup.connect(parentLink).execute();
+        int responseCode = response.statusCode();
+        String content = "";
         if (responseCode == 200) {
-            Document doc = Jsoup.connect(parentLink).get();
-            Elements allElements = doc.getAllElements();
-            allElements.forEach(element -> content.append(element.data()).append("\n"));
+            Document doc = response.parse();
+            content = doc.outerHtml();
             Elements elements = doc.select("a[href]");
             elements.forEach(element -> {
                 String link = element.attr("abs:href");
@@ -63,7 +64,7 @@ public class RecursiveSearch extends RecursiveAction {
                 }
             });
         }
-        Page page = new Page(website, path, responseCode, content.toString());
+        Page page = new Page(website, path, responseCode, content);
         savePage(page);
         website.setStatusTime(LocalDateTime.now());
         websiteRepository.save(website);
