@@ -9,7 +9,9 @@ import searchengine.dto.indexing.IndexingResponseFalse;
 import searchengine.dto.indexing.IndexingResponseTrue;
 import searchengine.model.IndexingStatus;
 import searchengine.model.Website;
+import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
+import searchengine.repositories.SearchIndexRepository;
 import searchengine.repositories.WebsiteRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,6 +27,8 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final PageRepository pageRepository;
     private final WebsiteRepository websiteRepository;
+    private final LemmaRepository lemmaRepository;
+    private final SearchIndexRepository searchIndexRepository;
     private final SitesList sites;
     private boolean isIndexingStarted = false;
     ArrayList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
@@ -71,7 +75,8 @@ public class IndexingServiceImpl implements IndexingService {
             websiteRepository.save(website);
             ForkJoinPool forkJoinPool = new ForkJoinPool();
             forkJoinPoolList.add(forkJoinPool);
-            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository, websiteRepository);
+            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl(), pageRepository,
+                    websiteRepository, lemmaRepository, searchIndexRepository);
             forkJoinPool.invoke(recursiveSearch);
         }
         finishIndexing(INDEXED, "");

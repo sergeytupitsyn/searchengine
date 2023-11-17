@@ -3,17 +3,20 @@ package searchengine.services;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import searchengine.model.Lemma;
 import searchengine.model.Page;
+import searchengine.model.SearchIndex;
 import searchengine.model.Website;
+import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
+import searchengine.repositories.SearchIndexRepository;
 import searchengine.repositories.WebsiteRepository;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
 
@@ -22,11 +25,17 @@ public class RecursiveSearch extends RecursiveAction {
     private final String parentLink;
     private final PageRepository pageRepository;
     private final WebsiteRepository websiteRepository;
-    public RecursiveSearch(Website website, String parentLink, PageRepository pageRepository, WebsiteRepository websiteRepository) {
+    private final LemmaRepository lemmaRepository;
+    private final SearchIndexRepository searchIndexRepository;
+
+    public RecursiveSearch(Website website, String parentLink, PageRepository pageRepository, WebsiteRepository websiteRepository,
+                           LemmaRepository lemmaRepository, SearchIndexRepository searchIndexRepository) {
         this.website = website;
         this.parentLink = parentLink;
         this.pageRepository = pageRepository;
         this.websiteRepository = websiteRepository;
+        this.lemmaRepository = lemmaRepository;
+        this.searchIndexRepository = searchIndexRepository;
     }
 
     @Override
@@ -39,7 +48,8 @@ public class RecursiveSearch extends RecursiveAction {
         }
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
-                RecursiveSearch action = new RecursiveSearch(website, link, pageRepository, websiteRepository);
+                RecursiveSearch action = new RecursiveSearch(website, link, pageRepository,
+                        websiteRepository, lemmaRepository, searchIndexRepository);
                 action.fork();
             }
         }
@@ -66,6 +76,7 @@ public class RecursiveSearch extends RecursiveAction {
         }
         Page page = new Page(website, path, responseCode, content);
         savePage(page);
+        saveLemmasFromCodeInDB(page);
         website.setStatusTime(LocalDateTime.now());
         websiteRepository.save(website);
         return linkList;
@@ -82,5 +93,27 @@ public class RecursiveSearch extends RecursiveAction {
         if (!isPageInDB(page.getPath())) {
             pageRepository.save(page);
         }
+    }
+
+    public void saveLemmasFromCodeInDB(Page page) throws IOException {
+        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
+        for (String string : lemmas.keySet()) {
+            Lemma lemmasInDB = lemmaRepository.findByLemma(string);
+
+            if (lemmasInDB == null) {
+                saveLemma(new Lemma(website, string, 1));
+                continue;
+            }
+            lemmasInDB.setFrequency(lemmasInDB.getFrequency() + 1);
+            saveLemma(lemmasInDB);
+        }
+    }
+
+    public synchronized void saveLemma(Lemma lemma) {
+        lemmaRepository.save(lemma);
+    }
+
+    public synchronized void saveSearchIndex(SearchIndex searchIndex) {
+        searchIndexRepository.save(searchIndex);
     }
 }

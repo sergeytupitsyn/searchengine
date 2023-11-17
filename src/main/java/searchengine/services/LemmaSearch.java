@@ -1,17 +1,15 @@
 package searchengine.services;
 
+import lombok.Setter;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+@Setter
 public class LemmaSearch {
-
     private static final String[] functionWords = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
-
-    public LemmaSearch() {
-    }
 
     public HashMap<String, Integer> splitToLemmas(String text) throws IOException {
 
