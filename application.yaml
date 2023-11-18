@@ -12,6 +12,7 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
+<<<<<<< HEAD
     show-sql: false
 
 indexing-settings:
@@ -27,3 +28,13 @@ jsoup-setting:
     ignoreHttpErrors: true
     ignoreContentType: true
     followRedirects: false
+=======
+    show-sql: true
+
+indexing-settings:
+  sites:
+    - url: http://avia-simply.ru
+      name: Авиация, понятная всем
+    - url: https://www.lenta.ru
+      name: Лента.ру
+>>>>>>> origin/final-project
