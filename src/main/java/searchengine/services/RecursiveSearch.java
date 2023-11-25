@@ -5,37 +5,20 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import searchengine.model.Lemma;
 import searchengine.model.Page;
-import searchengine.model.SearchIndex;
 import searchengine.model.Website;
-import searchengine.repositories.LemmaRepository;
-import searchengine.repositories.PageRepository;
-import searchengine.repositories.SearchIndexRepository;
-import searchengine.repositories.WebsiteRepository;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
 
 public class RecursiveSearch extends RecursiveAction {
     private final Website website;
     private final String parentLink;
-    private final PageRepository pageRepository;
-    private final WebsiteRepository websiteRepository;
-    private final LemmaRepository lemmaRepository;
-    private final SearchIndexRepository searchIndexRepository;
 
-    public RecursiveSearch(Website website, String parentLink, PageRepository pageRepository, WebsiteRepository websiteRepository,
-                           LemmaRepository lemmaRepository, SearchIndexRepository searchIndexRepository) {
+    public RecursiveSearch(Website website, String parentLink) {
         this.website = website;
         this.parentLink = parentLink;
-        this.pageRepository = pageRepository;
-        this.websiteRepository = websiteRepository;
-        this.lemmaRepository = lemmaRepository;
-        this.searchIndexRepository = searchIndexRepository;
     }
 
     @Override
@@ -48,8 +31,7 @@ public class RecursiveSearch extends RecursiveAction {
         }
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
-                RecursiveSearch action = new RecursiveSearch(website, link, pageRepository,
-                        websiteRepository, lemmaRepository, searchIndexRepository);
+                RecursiveSearch action = new RecursiveSearch(website, link);
                 action.fork();
             }
         }
@@ -74,15 +56,16 @@ public class RecursiveSearch extends RecursiveAction {
                 }
             });
         }
-        Page page = new Page(website, path, responseCode, content);
-        savePage(page);
+        IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content));
+        /*savePage(page);
         saveLemmasFromCodeInDB(page);
         website.setStatusTime(LocalDateTime.now());
         websiteRepository.save(website);
+        */
         return linkList;
     }
 
-    public boolean isPageInDB(String path) {
+    /*public boolean isPageInDB(String path) {
         ArrayList<Page> pagesInDB = pageRepository.findAllPageByPath(path);
         ArrayList<Integer> websitesId = new ArrayList<>();
         pagesInDB.forEach(page -> websitesId.add(page.getWebsite().getId()));
@@ -116,4 +99,6 @@ public class RecursiveSearch extends RecursiveAction {
     public synchronized void saveSearchIndex(SearchIndex searchIndex) {
         searchIndexRepository.save(searchIndex);
     }
+
+     */
 }
