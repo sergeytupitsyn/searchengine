@@ -106,7 +106,8 @@ public class IndexingServiceImpl implements IndexingService {
      */
 
     synchronized public static ArrayList<Page> getPageList() {
-        ArrayList<Page> pageListClone = pageList;
+        ArrayList<Page> pageListClone = new ArrayList<>();
+        pageListClone.addAll(pageList);
         pageList.clear();
         return pageListClone;
     }
@@ -117,10 +118,10 @@ public class IndexingServiceImpl implements IndexingService {
     public void finishIndexing(IndexingStatus status, String lastError) {
         while (isIndexingStarted) {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {}
-            ArrayList<Page> pageList = getPageList();
-            if (pageList.isEmpty()) {
+            ArrayList<Page> pageListToAddToDB = getPageList();
+            if (pageListToAddToDB.isEmpty()) {
                 isIndexingStarted = false;
                 sites.getSites().forEach(site -> {
                     Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
@@ -130,7 +131,7 @@ public class IndexingServiceImpl implements IndexingService {
                     websiteRepository.save(website);
                 });
             }
-            pageList.forEach(page -> {
+            pageListToAddToDB.forEach(page -> {
                 if (!isPageInDB(page)) {
                     pageRepository.save(page);
                 }
