@@ -25,4 +25,13 @@ public class SearchIndex {
 
     @Column(name = "`rank`", nullable = false)
     private float rank;
+
+    public SearchIndex() {
+    }
+
+    public SearchIndex(Page page, Lemma lemma, float rank) {
+        this.page = page;
+        this.lemma = lemma;
+        this.rank = rank;
+    }
 }

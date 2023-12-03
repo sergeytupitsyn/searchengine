@@ -25,6 +25,9 @@ public class Lemma {
     @Column(nullable = false)
     private int frequency;
 
+    public Lemma() {
+    }
+
     public Lemma(Website website, String lemma, int frequency) {
         this.website = website;
         this.lemma = lemma;
