@@ -11,10 +11,15 @@ import java.util.List;
 public class LemmaSearch {
     private static final String[] functionWords = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
 
-    public HashMap<String, Integer> splitToLemmas(String text) throws IOException {
+    public HashMap<String, Integer> splitToLemmas(String text) {
 
         String[] words = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
-        LuceneMorphology luceneMorph = new RussianLuceneMorphology();
+        LuceneMorphology luceneMorph = null;
+        try {
+            luceneMorph = new RussianLuceneMorphology();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         HashMap<String, Integer> lemmas = new HashMap<>();
         for (String word : words) {
             if (word.isBlank()) {

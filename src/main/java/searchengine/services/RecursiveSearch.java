@@ -57,48 +57,6 @@ public class RecursiveSearch extends RecursiveAction {
             });
         }
         IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content));
-        /*savePage(page);
-        saveLemmasFromCodeInDB(page);
-        website.setStatusTime(LocalDateTime.now());
-        websiteRepository.save(website);
-        */
         return linkList;
     }
-
-    /*public boolean isPageInDB(String path) {
-        ArrayList<Page> pagesInDB = pageRepository.findAllPageByPath(path);
-        ArrayList<Integer> websitesId = new ArrayList<>();
-        pagesInDB.forEach(page -> websitesId.add(page.getWebsite().getId()));
-        return !pagesInDB.isEmpty() && websitesId.contains(website.getId());
-    }
-
-    public synchronized void savePage(Page page) {
-        if (!isPageInDB(page.getPath())) {
-            pageRepository.save(page);
-        }
-    }
-
-    public void saveLemmasFromCodeInDB(Page page) throws IOException {
-        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
-        for (String string : lemmas.keySet()) {
-            Lemma lemmasInDB = lemmaRepository.findByLemma(string);
-
-            if (lemmasInDB == null) {
-                saveLemma(new Lemma(website, string, 1));
-                continue;
-            }
-            lemmasInDB.setFrequency(lemmasInDB.getFrequency() + 1);
-            saveLemma(lemmasInDB);
-        }
-    }
-
-    public synchronized void saveLemma(Lemma lemma) {
-        lemmaRepository.save(lemma);
-    }
-
-    public synchronized void saveSearchIndex(SearchIndex searchIndex) {
-        searchIndexRepository.save(searchIndex);
-    }
-
-     */
 }

@@ -16,7 +16,7 @@ public class Lemma {
     private int id;
 
     @JoinColumn(name = "site_id", nullable = false)
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @OneToOne(cascade = CascadeType.MERGE)
     private Website website;
 
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)

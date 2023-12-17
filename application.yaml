@@ -18,6 +18,8 @@ indexing-settings:
   sites:
     - url: http://www.playback.ru/
       name: PlayBack.ru
+    - url: https://radiomv.ru/
+      name: Милицейская волна
 
 jsoup-setting:
   jsoup:

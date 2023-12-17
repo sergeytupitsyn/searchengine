@@ -60,8 +60,14 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse getIndexPageResponse(String url) {
-        System.out.println(url);
-        return new IndexingResponseTrue();
+        for (Site site : sites.getSites()) {
+            if (url.startsWith(site.getUrl())) {
+                indexingPage(url, site);
+                return new IndexingResponseTrue();
+            }
+        }
+        return new IndexingResponseFalse("Данная страница находится за пределами сайтов, " +
+                "указанных в конфигурационном файле");
     }
 
     public void startIndexing() {
@@ -128,12 +134,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     public void saveLemmaInDB(Page page) {
-        HashMap<String, Integer> lemmas = null;
-        try {
-            lemmas = new LemmaSearch().splitToLemmas(page.getContent());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
         for (String lemmaString : lemmas.keySet()) {
             Lemma lemma;
             if (!isLemmaInDB(lemmaString)) {
@@ -150,7 +151,9 @@ public class IndexingServiceImpl implements IndexingService {
     public void removeSiteDataFromBD(Website website) {
         int id = website.getId();
         ArrayList<Page> pages = pageRepository.findAllPageByWebsite(website);
-        pages.forEach(searchIndexRepository::deleteByPage);
+        ArrayList<Lemma> lemmas = lemmaRepository.findAllByWebsite(website);
+        pages.forEach(searchIndexRepository::deleteAllByPage);
+        lemmas.forEach(searchIndexRepository::deleteAllByLemma);
         lemmaRepository.deleteByWebsite(website);
         pageRepository.deleteByWebsite(website);
         websiteRepository.deleteById(id);
@@ -162,5 +165,33 @@ public class IndexingServiceImpl implements IndexingService {
         website.setStatus(status);
         website.setLastError(lastError);
         websiteRepository.save(website);
+    }
+
+    public void indexingPage(String url, Site site) {
+        Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
+        Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(website.getUrl().length() - 1), website);
+        removePageDataFromBD(newlyIndexedPage);
+        isIndexingStarted = true;
+        RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl());
+        try {
+            recursiveSearch.pageParser(url);
+        } catch (IOException | InterruptedException ignored) {
+        }
+        saveIndexingDataInDB(INDEXED, "");
+    }
+
+    public void removePageDataFromBD(Page page) {
+        searchIndexRepository.deleteAllByPage(page);
+        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
+        for (String lemmaStr : lemmas.keySet()) {
+            Lemma lemmaToDeleted = lemmaRepository.findByLemmaAndWebsite(lemmaStr, page.getWebsite());
+            lemmaToDeleted.setFrequency(lemmaToDeleted.getFrequency() - 1);
+            if (lemmaToDeleted.getFrequency() == 0) {
+                lemmaRepository.delete(lemmaToDeleted);
+                continue;
+            }
+            lemmaRepository.save(lemmaToDeleted);
+        }
+        pageRepository.delete(page);
     }
 }
