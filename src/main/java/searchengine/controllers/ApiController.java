@@ -6,6 +6,7 @@ import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.IndexingServiceImpl;
+import searchengine.services.SearchService;
 import searchengine.services.StatisticsService;
 
 @RestController
@@ -14,10 +15,12 @@ public class ApiController {
 
     private final StatisticsService statisticsService;
     private final IndexingServiceImpl indexingService;
+    private final SearchService searchService;
 
-    public ApiController(StatisticsService statisticsService, IndexingServiceImpl indexingService) {
+    public ApiController(StatisticsService statisticsService, IndexingServiceImpl indexingService, SearchService searchService) {
         this.statisticsService = statisticsService;
         this.indexingService = indexingService;
+        this.searchService = searchService;
     }
 
     @GetMapping("/statistics")
@@ -42,6 +45,6 @@ public class ApiController {
 
     @GetMapping("/search")
     public ResponseEntity<SearchResponse> search (@RequestParam String query, String url, int offset, int limit) {
-        return ResponseEntity.ok(searchService.getSearchResponse);
+        return ResponseEntity.ok(searchService.getSearchResponse(query, url, offset, limit));
     }
 }

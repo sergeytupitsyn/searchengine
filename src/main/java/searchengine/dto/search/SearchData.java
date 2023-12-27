@@ -10,5 +10,5 @@ public class SearchData {
     private String uri;
     private String title;
     private String snippet;
-    private long relevance;
+    private double relevance;
 }

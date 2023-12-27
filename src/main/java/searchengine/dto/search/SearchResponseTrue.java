@@ -1,8 +1,10 @@
 package searchengine.dto.search;
 
-import java.util.ArrayList;
+import lombok.Data;
 
-public class SearchResponseTrue {
+import java.util.ArrayList;
+@Data
+public class SearchResponseTrue extends SearchResponse{
     private boolean result = true;
     private int count;
     private ArrayList<SearchData> dates;

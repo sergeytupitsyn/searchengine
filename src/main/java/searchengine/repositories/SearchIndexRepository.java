@@ -7,6 +7,8 @@ import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.SearchIndex;
 
+import java.util.ArrayList;
+
 @Repository
 public interface SearchIndexRepository extends JpaRepository<SearchIndex, Integer> {
 
@@ -15,4 +17,7 @@ public interface SearchIndexRepository extends JpaRepository<SearchIndex, Intege
 
     @Transactional
     void deleteAllByLemma(Lemma lemma);
+
+    @Transactional
+    ArrayList<SearchIndex> findAllByLemma(Lemma lemma);
 }
