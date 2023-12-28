@@ -7,5 +7,5 @@ import java.util.ArrayList;
 public class SearchResponseTrue extends SearchResponse{
     private boolean result = true;
     private int count;
-    private ArrayList<SearchData> dates;
+    private ArrayList<SearchData> data;
 }

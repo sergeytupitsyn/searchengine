@@ -1,6 +1,9 @@
 package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 import searchengine.config.SitesList;
 import searchengine.dto.search.SearchData;
@@ -15,6 +18,7 @@ import searchengine.repositories.PageRepository;
 import searchengine.repositories.SearchIndexRepository;
 import searchengine.repositories.WebsiteRepository;
 
+import java.io.IOException;
 import java.util.*;
 
 @Service
@@ -43,31 +47,44 @@ public class SearchServiceImpl implements SearchService {
         }
         lemmasListFromQuery.sort(Comparator.comparing(Lemma::getFrequency));
         Collections.reverse(lemmasListFromQuery);
-        ArrayList<SearchIndex> searchingIndexes = new ArrayList<>();
-        searchingIndexes.addAll(searchIndexRepository.findAllByLemma(lemmasListFromQuery.get(0)));
+        ArrayList<Page> searchingPages  = new ArrayList<>();
+        ArrayList<SearchIndex> searchingIndexes = new ArrayList<>(searchIndexRepository.findAllByLemma(lemmasListFromQuery.get(0)));
+        searchingIndexes.forEach(searchIndex -> searchingPages.add(searchIndex.getPage()));
         for (int i = 1; i < lemmasListFromQuery.size(); i++) {
             ArrayList<SearchIndex>  indexListForCurrentLemma = searchIndexRepository.findAllByLemma(lemmasListFromQuery.get(i));
-            Iterator<SearchIndex> iterator = searchingIndexes.iterator();
+            ArrayList<Page> pagesForCurrentLemma = new ArrayList<>();
+            indexListForCurrentLemma.forEach(searchIndex -> pagesForCurrentLemma.add(searchIndex.getPage()));
+            Iterator<Page> iterator = searchingPages.iterator();
             while (iterator.hasNext()) {
-                if (!indexListForCurrentLemma.contains(iterator.next())) {
+                if (!pagesForCurrentLemma.contains(iterator.next())) {
                     iterator.remove();
                 }
             }
         }
-        ArrayList<SearchData> searchingPages = new ArrayList<>();
-        for (SearchIndex index : searchingIndexes) {
+        ArrayList<SearchData> data = new ArrayList<>();
+        for (Page page : searchingPages) {
             SearchData searchData = new SearchData();
-            searchData.setSite(index.getPage().getWebsite().getUrl());
-            searchData.setSiteName(index.getPage().getWebsite().getName());
-            searchData.setUri("/path/to/page/6784");
-            searchData.setTitle("Заголовок страницы, которую выводим");
+            searchData.setSite(page.getWebsite().getUrl());
+            searchData.setSiteName(page.getWebsite().getName());
+            searchData.setUri(page.getPath().substring(1));
+            searchData.setTitle(getTitle(page));
             searchData.setSnippet("Фрагмент текста, в котором найдены совпадения, <b>выделенные жирным</b>, в формате HTML");
             searchData.setRelevance(Math.random());
-            searchingPages.add(searchData);
+            data.add(searchData);
         }
         SearchResponseTrue searchResponseTrue = new SearchResponseTrue();
         searchResponseTrue.setCount(searchingPages.size());
-        searchResponseTrue.setDates(searchingPages);
+        searchResponseTrue.setData(data);
         return searchResponseTrue;
+    }
+
+    public String getTitle(Page page) {
+        try {
+            Document document = Jsoup.connect(page.getWebsite().getUrl() + page.getPath().substring(1)).get();
+            Element element = document.selectFirst("title");
+            return element.text();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
