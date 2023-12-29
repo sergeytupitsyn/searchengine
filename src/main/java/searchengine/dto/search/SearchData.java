@@ -3,7 +3,7 @@ package searchengine.dto.search;
 import lombok.Data;
 
 @Data
-public class SearchData {
+public class SearchData implements Comparable<SearchData> {
 
     private String site;
     private String siteName;
@@ -11,4 +11,9 @@ public class SearchData {
     private String title;
     private String snippet;
     private double relevance;
+
+    @Override
+    public int compareTo(SearchData o) {
+        return siteName.compareTo(o.siteName);
+    }
 }

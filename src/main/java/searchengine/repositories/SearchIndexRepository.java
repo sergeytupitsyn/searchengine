@@ -20,4 +20,7 @@ public interface SearchIndexRepository extends JpaRepository<SearchIndex, Intege
 
     @Transactional
     ArrayList<SearchIndex> findAllByLemma(Lemma lemma);
+
+    @Transactional
+    SearchIndex findByLemmaAndPage(Lemma lemma, Page page);
 }
