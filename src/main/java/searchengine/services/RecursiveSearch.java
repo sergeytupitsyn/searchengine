@@ -39,7 +39,7 @@ public class RecursiveSearch extends RecursiveAction {
 
     @ConfigurationProperties(prefix = "jsoup-setting")
     public ArrayList<String> pageParser(String parentLink) throws IOException, InterruptedException {
-        ArrayList<String> linkList = new ArrayList<String>();
+        ArrayList<String> linkList = new ArrayList<>();
         String path = parentLink.substring(website.getUrl().length() - 1);
         sleep(100);
         Connection.Response response = Jsoup.connect(parentLink).execute();
@@ -47,7 +47,7 @@ public class RecursiveSearch extends RecursiveAction {
         String content = "";
         if (responseCode == 200) {
             Document doc = response.parse();
-            content = doc.outerHtml();
+            content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
             Elements elements = doc.select("a[href]");
             elements.forEach(element -> {
                 String link = element.attr("abs:href");

@@ -3,6 +3,8 @@ package searchengine.services;
 import lombok.Setter;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
+import org.jsoup.Jsoup;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -49,5 +51,9 @@ public class LemmaSearch {
             }
         }
         return false;
+    }
+
+    public static String clearCodeFromTags (String content) {
+        return Jsoup.parse(content).text();
     }
 }

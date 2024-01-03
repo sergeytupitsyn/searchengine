@@ -76,7 +76,7 @@ public class SearchServiceImpl implements SearchService {
             searchData.setRelevance(pageListWithRelevance.get(page));
             data.add(searchData);
         }
-        data.sort(new ComparatorByRelevance().reversed());
+        data.sort(Comparator.comparing(SearchData :: getRelevance).reversed());
         SearchResponseTrue searchResponseTrue = new SearchResponseTrue();
         searchResponseTrue.setCount(pagesList.size());
         searchResponseTrue.setData(data);

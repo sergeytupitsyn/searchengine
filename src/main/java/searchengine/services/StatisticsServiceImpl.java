@@ -43,6 +43,9 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setName(site.getName());
             item.setUrl(site.getUrl());
             Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
+            if (website == null) {
+                continue;
+            }
             int pages = pageRepository.findAllPageByWebsite(website).size();
             int lemmas = lemmaRepository.findAllByWebsite(website).size();
             item.setPages(pages);
@@ -68,6 +71,9 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<Site> sitesList = sites.getSites();
         for (Site site: sitesList) {
             Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
+            if (website == null) {
+                return true;
+            }
             if (website.getStatus().equals(IndexingStatus.INDEXING)) {
                 return true;
             }
