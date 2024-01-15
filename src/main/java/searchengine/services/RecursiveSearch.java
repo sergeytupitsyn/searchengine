@@ -23,12 +23,13 @@ public class RecursiveSearch extends RecursiveAction {
 
     @Override
     protected void compute() {
-        ArrayList<String> linksThisPage;
         try {
-            linksThisPage = pageParser(parentLink);
-        } catch (IOException | InterruptedException e) {
+            sleep(1500);
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        ArrayList<String> linksThisPage;
+        linksThisPage = pageParser(parentLink);
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
                 RecursiveSearch action = new RecursiveSearch(website, link);
@@ -38,21 +39,38 @@ public class RecursiveSearch extends RecursiveAction {
     }
 
     @ConfigurationProperties(prefix = "jsoup-setting")
-    public ArrayList<String> pageParser(String parentLink) throws IOException, InterruptedException {
+    public ArrayList<String> pageParser(String link) {
+        try {
+            sleep(1200);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         ArrayList<String> linkList = new ArrayList<>();
-        String path = parentLink.substring(website.getUrl().length() - 1);
-        sleep(100);
-        Connection.Response response = Jsoup.connect(parentLink).execute();
+        String path = link.substring(website.getUrl().length() - 1);
+        Connection.Response response = null;
+        try {
+            response = Jsoup.connect(link).execute();
+        } catch (IOException e) {
+            System.out.println("connect" + e);
+        }
         int responseCode = response.statusCode();
         String content = "";
         if (responseCode == 200) {
-            Document doc = response.parse();
+            Document doc = null;
+            try {
+                doc = response.parse();
+            } catch (IOException e) {
+                System.out.println("parse");
+            }
             content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
             Elements elements = doc.select("a[href]");
             elements.forEach(element -> {
-                String link = element.attr("abs:href");
-                if (link.startsWith(parentLink) && !linkList.contains(link) && !link.equals(parentLink) && !link.endsWith("#")) {
-                    linkList.add(link);
+                String childLink = element.attr("abs:href");
+                if (childLink.startsWith(website.getUrl())
+                        && !IndexingServiceImpl.parsedLinksList.contains(childLink)
+                        && !childLink.endsWith("#")) {
+                    linkList.add(childLink);
+                    IndexingServiceImpl.parsedLinksList.add(childLink);
                 }
             });
         }

@@ -35,6 +35,7 @@ public class IndexingServiceImpl implements IndexingService {
     private boolean isIndexingStarted = false;
     ArrayList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
     static ArrayList<Page> pageList = new ArrayList<>();
+    static ArrayList<String> parsedLinksList = new ArrayList<>();
 
     @Override
     public IndexingResponse getStartResponse() {
@@ -72,6 +73,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void startIndexing() {
         isIndexingStarted = true;
+        parsedLinksList.clear();
         for (Site site : sites.getSites()) {
             Website oldWebsite = websiteRepository.findWebsiteByUrl(site.getUrl());
             if(oldWebsite != null ) {
@@ -173,10 +175,7 @@ public class IndexingServiceImpl implements IndexingService {
         removePageDataFromBD(newlyIndexedPage);
         isIndexingStarted = true;
         RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl());
-        try {
-            recursiveSearch.pageParser(url);
-        } catch (IOException | InterruptedException ignored) {
-        }
+        recursiveSearch.pageParser(url);
         saveIndexingDataInDB(INDEXED, "");
     }
 
