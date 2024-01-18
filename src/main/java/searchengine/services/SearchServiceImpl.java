@@ -72,7 +72,7 @@ public class SearchServiceImpl implements SearchService {
             searchData.setSiteName(page.getWebsite().getName());
             searchData.setUri(page.getPath().substring(1));
             searchData.setTitle(getTitle(page));
-            searchData.setSnippet("Фрагмент текста, в котором найдены совпадения, <b>выделенные жирным</b>, в формате HTML");
+            searchData.setSnippet(new SnippetSearch(page.getContent(), lemmasListFromQuery).getSnippet());
             searchData.setRelevance(pageListWithRelevance.get(page));
             data.add(searchData);
         }
@@ -120,8 +120,4 @@ public class SearchServiceImpl implements SearchService {
         return pages;
     }
 
-    public String getSnippet (ArrayList<Lemma> lemmasListFromQuery, Page page) {
-
-        return " ";
-    }
 }

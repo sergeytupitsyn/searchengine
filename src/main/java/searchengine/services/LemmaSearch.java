@@ -11,6 +11,7 @@ import java.util.List;
 
 @Setter
 public class LemmaSearch {
+
     private static final String[] functionWords = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
 
     public HashMap<String, Integer> splitToLemmas(String text) {
@@ -55,5 +56,20 @@ public class LemmaSearch {
 
     public static String clearCodeFromTags (String content) {
         return Jsoup.parse(content).text();
+    }
+
+    public String wordToLemmaString (String word) {
+        word = word.toLowerCase().replaceAll("([^а-я])","");
+        LuceneMorphology luceneMorph = null;
+        try {
+            luceneMorph = new RussianLuceneMorphology();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        List<String> wordBaseForms = luceneMorph.getNormalForms(word);
+        if (wordBaseForms.isEmpty()) {
+            return "";
+        }
+        return wordBaseForms.get(0);
     }
 }
