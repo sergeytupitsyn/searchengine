@@ -16,8 +16,8 @@ spring:
 
 indexing-settings:
   sites:
-    - url: https://radiomv.ru/
-      name: Милицейская волна
+    - url: http://www.playback.ru/
+      name: PlayBack.ru
 
 jsoup-setting:
   jsoup:

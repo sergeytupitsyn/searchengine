@@ -34,37 +34,17 @@ public class SearchServiceImpl implements SearchService {
         if (query.isEmpty()) {
             return new SearchResponseFalse("Задан пустой поисковый запрос");
         }
-        HashMap<String, Integer> lemmasStrFromQuery = new LemmaSearch().splitToLemmas(query);
-        ArrayList<Lemma> lemmasListFromQuery = new ArrayList<>();
-        for (String lemmaStr : lemmasStrFromQuery.keySet()) {
-            Lemma lemma = lemmaRepository.findByLemma(lemmaStr);
-            if (lemma == null) {
-                continue;
-            }
-            if ((double) lemma.getFrequency() / pageRepository.count() > 0.95) {
-                continue;
-            }
-            lemmasListFromQuery.add(lemma);
-        }
-        lemmasListFromQuery.sort(Comparator.comparing(Lemma::getFrequency));
+        ArrayList<Lemma> lemmasListFromQuery = getLemmaList(query);
         if (lemmasListFromQuery.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
-        lemmasListFromQuery.forEach(lemma -> System.out.println(lemma.getLemma() + lemma.getFrequency()));
-        ArrayList<Page> pagesList = getPagesByLemma(lemmasListFromQuery.get(0));
-        for (int i = 1; i < lemmasListFromQuery.size(); i++) {
-            ArrayList<Page> pagesForItemLemma = getPagesByLemma(lemmasListFromQuery.get(i));
-            Iterator<Page> iterator = pagesList.iterator();
-            while (iterator.hasNext()) {
-                if (!pagesForItemLemma.contains(iterator.next())) {
-                    iterator.remove();
-                }
-            }
-        }
-        if (pagesList.isEmpty()) {
+        //lemmasListFromQuery.forEach(lemma -> System.out.println(lemma.getLemma() + lemma.getFrequency()));
+        ArrayList<Page> pageListToResponse = getPageListByLemmaList(lemmasListFromQuery);
+        if (pageListToResponse.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
-        HashMap<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery, pagesList);
+        pageListToResponse = trimToLimit(pageListToResponse, limit);
+        HashMap<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery, pageListToResponse);
         ArrayList<SearchData> data = new ArrayList<>();
         for (Page page : pageListWithRelevance.keySet()) {
             SearchData searchData = new SearchData();
@@ -73,12 +53,13 @@ public class SearchServiceImpl implements SearchService {
             searchData.setUri(page.getPath().substring(1));
             searchData.setTitle(getTitle(page));
             searchData.setSnippet(new SnippetSearch(page.getContent(), lemmasListFromQuery).getSnippet());
+            //searchData.setSnippet("пока без снипетов");
             searchData.setRelevance(pageListWithRelevance.get(page));
             data.add(searchData);
         }
         data.sort(Comparator.comparing(SearchData :: getRelevance).reversed());
         SearchResponseTrue searchResponseTrue = new SearchResponseTrue();
-        searchResponseTrue.setCount(pagesList.size());
+        searchResponseTrue.setCount(pageListToResponse.size());
         searchResponseTrue.setData(data);
         return searchResponseTrue;
     }
@@ -87,7 +68,10 @@ public class SearchServiceImpl implements SearchService {
         try {
             Document document = Jsoup.connect(page.getWebsite().getUrl() + page.getPath().substring(1)).get();
             Element element = document.selectFirst("title");
-            return element.text();
+            if (element != null) {
+                return element.text();
+            }
+            return "";
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -114,10 +98,49 @@ public class SearchServiceImpl implements SearchService {
     }
 
     public ArrayList<Page> getPagesByLemma(Lemma lemma) {
-        ArrayList<SearchIndex> searchIndices = searchIndexRepository.findAllByLemma(lemma);
+        ArrayList<SearchIndex> indexList = searchIndexRepository.findAllByLemma(lemma);
         ArrayList<Page> pages = new ArrayList<>();
-        searchIndices.forEach(searchIndex -> pages.add(searchIndex.getPage()));
+        indexList.forEach(searchIndex -> pages.add(searchIndex.getPage()));
         return pages;
     }
 
+    public ArrayList<Page> getPageListByLemmaList(ArrayList<Lemma> lemmaList) {
+        ArrayList<Page> pagesList = getPagesByLemma(lemmaList.get(0));
+        for (int i = 1; i < lemmaList.size(); i++) {
+            ArrayList<Page> pagesForItemLemma = getPagesByLemma(lemmaList.get(i));
+            Iterator<Page> iterator = pagesList.iterator();
+            while (iterator.hasNext()) {
+                if (!pagesForItemLemma.contains(iterator.next())) {
+                    iterator.remove();
+                }
+            }
+        }
+        return pagesList;
+    }
+
+    public ArrayList<Page> trimToLimit(ArrayList<Page> pageList, int limit) {
+    int size = pageList.size();
+    if (size <= limit) {
+        return pageList;
+    }
+    pageList.subList(limit, size).clear();
+    return pageList;
+    }
+
+    public ArrayList<Lemma> getLemmaList(String query) {
+        HashMap<String, Integer> lemmasStrFromQuery = new LemmaSearch().splitToLemmas(query);
+        ArrayList<Lemma> lemmasListFromQuery = new ArrayList<>();
+        for (String lemmaStr : lemmasStrFromQuery.keySet()) {
+            Lemma lemma = lemmaRepository.findByLemma(lemmaStr);
+            if (lemma == null) {
+                continue;
+            }
+            if ((double) lemma.getFrequency() / pageRepository.count() > 0.95) {
+                continue;
+            }
+            lemmasListFromQuery.add(lemma);
+        }
+        lemmasListFromQuery.sort(Comparator.comparing(Lemma::getFrequency));
+        return lemmasListFromQuery;
+    }
 }
