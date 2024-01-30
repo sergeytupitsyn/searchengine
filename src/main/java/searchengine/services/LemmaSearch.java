@@ -12,27 +12,31 @@ import java.util.List;
 @Setter
 public class LemmaSearch {
 
+    private LuceneMorphology luceneMorphology;
+
     private static final String[] functionWords = new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"};
+
+    public LemmaSearch() {
+        try {
+            luceneMorphology = new RussianLuceneMorphology();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public HashMap<String, Integer> splitToLemmas(String text) {
 
         String[] words = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
-        LuceneMorphology luceneMorph = null;
-        try {
-            luceneMorph = new RussianLuceneMorphology();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
         HashMap<String, Integer> lemmas = new HashMap<>();
         for (String word : words) {
             if (word.isBlank()) {
                 continue;
             }
-            List<String> wordMorphInfo = luceneMorph.getMorphInfo(word);
+            List<String> wordMorphInfo = luceneMorphology.getMorphInfo(word);
             if (isFunctionWords(wordMorphInfo)) {
                 continue;
             }
-            List<String> wordBaseForms = luceneMorph.getNormalForms(word);
+            List<String> wordBaseForms = luceneMorphology.getNormalForms(word);
             if (wordBaseForms.isEmpty()) {
                 continue;
             }
@@ -60,13 +64,7 @@ public class LemmaSearch {
 
     public String wordToLemmaString (String word) {
         word = word.toLowerCase().replaceAll("([^а-я])","");
-        LuceneMorphology luceneMorph = null;
-        try {
-            luceneMorph = new RussianLuceneMorphology();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        List<String> wordBaseForms = luceneMorph.getNormalForms(word);
+        List<String> wordBaseForms = luceneMorphology.getNormalForms(word);
         if (wordBaseForms.isEmpty()) {
             return "";
         }

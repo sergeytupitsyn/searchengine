@@ -3,6 +3,7 @@ package searchengine.services;
 import searchengine.model.Lemma;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 public class SnippetSearch {
 
@@ -14,9 +15,11 @@ public class SnippetSearch {
     public SnippetSearch(String text, ArrayList<Lemma> lemmaListFromQuery) {
         this.text = text;
         this.lemmaListFromQuery = lemmaListFromQuery;
+        LemmaSearch lemmaSearch= new LemmaSearch();
         String[] contentSplitIntoWords = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
-        for (int i = 0; i < contentSplitIntoWords.length; i++) {
-            Word word = new Word(contentSplitIntoWords[i], i);
+        for (String string : contentSplitIntoWords) {
+            Word word = new Word(string);
+            word.setNormalForms(lemmaSearch.wordToLemmaString(string));
             wordList.add(word);
         }
         snippetSize = 20;
