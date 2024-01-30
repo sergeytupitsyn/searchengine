@@ -15,8 +15,8 @@ public class SnippetSearch {
     public SnippetSearch(String text, ArrayList<Lemma> lemmaListFromQuery) {
         this.text = text;
         this.lemmaListFromQuery = lemmaListFromQuery;
-        LemmaSearch lemmaSearch= new LemmaSearch();
-        String[] contentSplitIntoWords = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
+        LemmaSearch lemmaSearch = new LemmaSearch();
+        String[] contentSplitIntoWords = text.toLowerCase().replaceAll("([^а-я\\s])", "").trim().split("\\s+");
         for (String string : contentSplitIntoWords) {
             Word word = new Word(string);
             word.setNormalForms(lemmaSearch.wordToLemmaString(string));
@@ -32,7 +32,7 @@ public class SnippetSearch {
         for (int searchBox = lemmaList.size(); searchBox < snippetSize; searchBox++) {
             for (int i = 0; i < wordList.size() - searchBox; i++) {
                 if (isQueryInSearchBox(i, searchBox)) {
-                    return new int[] {i, i + searchBox};
+                    return new int[]{i, i + searchBox};
                 }
             }
         }
@@ -46,7 +46,7 @@ public class SnippetSearch {
         }
         for (Lemma lemma : lemmaListFromQuery) {
             if (!wordInSearchBox.contains(lemma.getLemma())) {
-                 return false;
+                return false;
             }
         }
         return true;
@@ -70,24 +70,37 @@ public class SnippetSearch {
     public int[] getSnippetPosition() {
         int[] queryPosition = getQueryPositionInText();
         if (queryPosition == null) {
-            return new int[] {0, 20};
+            return new int[]{0, 20};
         }
         int searchBox = queryPosition[1] - queryPosition[0] + 1;
         if (queryPosition[0] <= 10 - (searchBox / 2)) {
-            return new int[] {0, 20};
+            return new int[]{0, 20};
         }
-        if (queryPosition[1] >= wordList.size() - 11 +(searchBox / 2)) {
-            return new int[] {wordList.size() - 21, wordList.size() - 1};
+        if (queryPosition[1] >= wordList.size() - 11 + (searchBox / 2)) {
+            return new int[]{wordList.size() - 21, wordList.size() - 1};
         }
-        return new int[] {queryPosition[0] - 10 + (searchBox / 2), queryPosition[1] + 10 - (searchBox / 2)};
+        return new int[]{queryPosition[0] - 10 + (searchBox / 2), queryPosition[1] + 10 - (searchBox / 2)};
     }
 
     public String getSnippet() {
         int[] snippetPosition = getSnippetPosition();
         StringBuilder snippet = new StringBuilder();
         for (int i = snippetPosition[0]; i <= snippetPosition[1]; i++) {
-            snippet.append(wordList.get(i).getWord()).append(" ");
+            if (isWordInQuery(wordList.get(i).getNormalForms())) {
+                snippet.append("<b>").append(wordList.get(i).getWord()).append("</b> ");
+            } else {
+                snippet.append(wordList.get(i).getWord()).append(" ");
+            }
         }
         return snippet.toString();
+    }
+
+    public boolean isWordInQuery(String word) {
+        for (Lemma lemma : lemmaListFromQuery) {
+            if (lemma.getLemma().equals(word)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
