@@ -53,7 +53,7 @@ public class RecursiveSearch extends RecursiveAction {
         } catch (IOException e) {
             System.out.println("connect" + e);
         }
-        int responseCode = response.statusCode();
+        int responseCode = response != null ? response.statusCode() : 404;
         String content = "";
         if (responseCode == 200) {
             Document doc = null;

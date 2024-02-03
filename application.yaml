@@ -16,8 +16,13 @@ spring:
 
 indexing-settings:
   sites:
-    - url: http://www.playback.ru/
-      name: PlayBack.ru
+    - url: https://dombulgakova.ru/
+      name: Булгаковский дом
+    - url: https://et-cetera.ru/mobile/
+      name: Театр «Et Cetera»
+    - url: https://ipfran.ru/
+      name: Институт прикладной физики
+
 
 jsoup-setting:
   jsoup:

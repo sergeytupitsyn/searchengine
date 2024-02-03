@@ -26,11 +26,10 @@ public class SearchServiceImpl implements SearchService {
     private final PageRepository pageRepository;
     private final WebsiteRepository websiteRepository;
     private final LemmaRepository lemmaRepository;
-    private final SearchIndexRepository searchIndexRepository;
-    private final SitesList sites;
+    private final SearchIndexRepository searchIndexRepository;;
 
     @Override
-    public SearchResponse getSearchResponse(String query, String url, int offset, int limit) {
+    public SearchResponse getSearchResponse(String query, String sait, int offset, int limit) {
         if (query.isEmpty()) {
             return new SearchResponseFalse("Задан пустой поисковый запрос");
         }
@@ -38,8 +37,7 @@ public class SearchServiceImpl implements SearchService {
         if (lemmasListFromQuery.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
-        //lemmasListFromQuery.forEach(lemma -> System.out.println(lemma.getLemma() + lemma.getFrequency()));
-        ArrayList<Page> pageListToResponse = getPageListByLemmaList(lemmasListFromQuery);
+        ArrayList<Page> pageListToResponse = getPageListByLemmaList(lemmasListFromQuery, sait);
         if (pageListToResponse.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
@@ -53,7 +51,6 @@ public class SearchServiceImpl implements SearchService {
             searchData.setUri(page.getPath().substring(1));
             searchData.setTitle(getTitle(page));
             searchData.setSnippet(new SnippetSearch(page.getContent(), lemmasListFromQuery).getSnippet());
-            //searchData.setSnippet("пока без снипетов");
             searchData.setRelevance(pageListWithRelevance.get(page));
             data.add(searchData);
         }
@@ -97,17 +94,26 @@ public class SearchServiceImpl implements SearchService {
         return pageListWithRelevance;
     }
 
-    public ArrayList<Page> getPagesByLemma(Lemma lemma) {
+    public ArrayList<Page> getPagesByLemma(Lemma lemma, String saitToSearch) {
         ArrayList<SearchIndex> indexList = searchIndexRepository.findAllByLemma(lemma);
         ArrayList<Page> pages = new ArrayList<>();
-        indexList.forEach(searchIndex -> pages.add(searchIndex.getPage()));
+        if (saitToSearch == null) {
+            indexList.forEach(searchIndex -> pages.add(searchIndex.getPage()));
+        } else {
+            for (SearchIndex searchIndex : indexList) {
+                String url = searchIndex.getPage().getWebsite().getUrl();
+                if (url.equals(saitToSearch)) {
+                    pages.add(searchIndex.getPage());
+                }
+            }
+        }
         return pages;
     }
 
-    public ArrayList<Page> getPageListByLemmaList(ArrayList<Lemma> lemmaList) {
-        ArrayList<Page> pagesList = getPagesByLemma(lemmaList.get(0));
+    public ArrayList<Page> getPageListByLemmaList(ArrayList<Lemma> lemmaList, String sait) {
+        ArrayList<Page> pagesList = getPagesByLemma(lemmaList.get(0), sait);
         for (int i = 1; i < lemmaList.size(); i++) {
-            ArrayList<Page> pagesForItemLemma = getPagesByLemma(lemmaList.get(i));
+            ArrayList<Page> pagesForItemLemma = getPagesByLemma(lemmaList.get(i), sait);
             Iterator<Page> iterator = pagesList.iterator();
             while (iterator.hasNext()) {
                 if (!pagesForItemLemma.contains(iterator.next())) {
