@@ -41,8 +41,8 @@ public class SearchServiceImpl implements SearchService {
         if (pageListToResponse.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
-        pageListToResponse = trimToLimit(pageListToResponse, limit);
-        HashMap<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery, pageListToResponse);
+        ArrayList<Page> trimmedPageListToResponse = trimToLimit(pageListToResponse, limit, offset);
+        HashMap<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery, trimmedPageListToResponse);
         ArrayList<SearchData> data = new ArrayList<>();
         for (Page page : pageListWithRelevance.keySet()) {
             SearchData searchData = new SearchData();
@@ -124,13 +124,15 @@ public class SearchServiceImpl implements SearchService {
         return pagesList;
     }
 
-    public ArrayList<Page> trimToLimit(ArrayList<Page> pageList, int limit) {
+    public ArrayList<Page> trimToLimit(ArrayList<Page> pageList, int limit, int offset) {
     int size = pageList.size();
     if (size <= limit) {
         return pageList;
     }
-    pageList.subList(limit, size).clear();
-    return pageList;
+        ArrayList<Page> pageArrayList = new ArrayList<>(pageList);
+    pageArrayList.subList(0, offset).clear();
+    pageArrayList.subList(limit, size - offset).clear();
+    return pageArrayList;
     }
 
     public ArrayList<Lemma> getLemmaList(String query) {
