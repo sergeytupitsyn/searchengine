@@ -7,7 +7,7 @@
 
 # Используемые технологии
 
-Java version 19, Spring Framework, Morphology Library Lucene, Lombok, SQL, JPA, JSOUP.
+Java version 17, Spring Framework, Morphology Library Lucene, Lombok, SQL, JPA, JSOUP.
 
 # Веб-интерфейс
 
