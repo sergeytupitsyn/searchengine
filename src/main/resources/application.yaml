@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    username: root
-    password: Gslsuhtpl-43
-    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    username: user
+    password: 654321
+    url: jdbc:mysql://127.0.0.1:3307/db_searchengine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
   jpa:
     properties:
       hibernate:
@@ -20,9 +20,6 @@ indexing-settings:
       name: Булгаковский дом
     - url: https://et-cetera.ru/mobile/
       name: Театр «Et Cetera»
-    - url: https://ipfran.ru/
-      name: Институт прикладной физики
-
 
 jsoup-setting:
   jsoup:
