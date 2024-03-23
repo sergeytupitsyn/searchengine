@@ -27,3 +27,10 @@ Java version 17, Spring Framework, Morphology Library Lucene, Lombok, SQL, JPA, 
 # Search
 
 Поиск возможен как по всем сайтам, так и по какому-то одному. Через веб-интерфейс производится поиск 10 самых релевантных запросу страниц. Если по запросу ничего не найдено, алгоритм поиска убирает лишние слова, чтобы расширить доступные варианты.
+
+# Запуск проекта 
+
+Для запуска понадобятся IntelliJ IDEA и Docker
+<li>клонируйте проект git clone https://github.com/sergeytupitsyn/searchengine.git</li>
+<li>запустите контейнер с базой данных docker-compose up -d</li>
+<li>запустите проект в IntelliJ IDEA</li>
