@@ -51,7 +51,7 @@ public class RecursiveSearch extends RecursiveAction {
         try {
             response = Jsoup.connect(link).execute();
         } catch (IOException e) {
-            System.out.println("connect" + e);
+            System.out.println("ошибка при Jsoup.connect(link).execute() " + e);
         }
         int responseCode = response != null ? response.statusCode() : 404;
         String content = "";
@@ -60,7 +60,7 @@ public class RecursiveSearch extends RecursiveAction {
             try {
                 doc = response.parse();
             } catch (IOException e) {
-                System.out.println("parse");
+                System.out.println("ошибка при response.parse() " + e);
             }
             content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
             Elements elements = doc.select("a[href]");
@@ -68,7 +68,7 @@ public class RecursiveSearch extends RecursiveAction {
                 String childLink = element.attr("abs:href");
                 if (childLink.startsWith(website.getUrl())
                         && !IndexingServiceImpl.parsedLinksList.contains(childLink)
-                        && !childLink.endsWith("#")) {
+                        && isLinkCorrect(childLink)) {
                     linkList.add(childLink);
                     IndexingServiceImpl.parsedLinksList.add(childLink);
                 }
@@ -76,5 +76,18 @@ public class RecursiveSearch extends RecursiveAction {
         }
         IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content));
         return linkList;
+    }
+
+    public boolean isLinkCorrect(String link) {
+        String[] extension = {"method=", "jpg", "png", "mp4", "jpeg"};
+        if (link.endsWith("#")) {
+            return false;
+        }
+        for (String string : extension) {
+            if (link.contains(string)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

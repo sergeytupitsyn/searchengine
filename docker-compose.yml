@@ -13,3 +13,5 @@ services:
       MYSQL_PASSWORD: "654321"
     volumes:
       - ./db:/var/lib/mysql
+volumes:
+  db-data:
