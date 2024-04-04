@@ -9,6 +9,7 @@ import searchengine.model.Page;
 import searchengine.model.Website;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
 
@@ -28,7 +29,7 @@ public class RecursiveSearch extends RecursiveAction {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        ArrayList<String> linksThisPage;
+        List<String> linksThisPage;
         linksThisPage = pageParser(parentLink);
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
@@ -39,13 +40,13 @@ public class RecursiveSearch extends RecursiveAction {
     }
 
     @ConfigurationProperties(prefix = "jsoup-setting")
-    public ArrayList<String> pageParser(String link) {
+    public List<String> pageParser(String link) {
         try {
             sleep(1200);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        ArrayList<String> linkList = new ArrayList<>();
+        List<String> linkList = new ArrayList<>();
         String path = link.substring(website.getUrl().length() - 1);
         Connection.Response response = null;
         try {
@@ -79,7 +80,7 @@ public class RecursiveSearch extends RecursiveAction {
     }
 
     public boolean isLinkCorrect(String link) {
-        String[] extension = {"method=", "jpg", "png", "mp4", "jpeg"};
+        String[] extension = {"method=", "jpg", "png", "mp4", "jpeg", "pdf"};
         if (link.endsWith("#")) {
             return false;
         }

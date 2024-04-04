@@ -4,15 +4,16 @@ import searchengine.model.Lemma;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class SnippetSearch {
 
     private final String text;
-    private final ArrayList<Lemma> lemmaListFromQuery;
-    private final ArrayList<Word> wordList = new ArrayList<>();
+    private final List<Lemma> lemmaListFromQuery;
+    private final List<Word> wordList = new ArrayList<>();
     private int snippetSize;
 
-    public SnippetSearch(String text, ArrayList<Lemma> lemmaListFromQuery) {
+    public SnippetSearch(String text, List<Lemma> lemmaListFromQuery) {
         this.text = text;
         this.lemmaListFromQuery = lemmaListFromQuery;
         LemmaSearch lemmaSearch = new LemmaSearch();
@@ -28,7 +29,7 @@ public class SnippetSearch {
         }
     }
 
-    public int[] getQueryPositionInTextForLemmaList(ArrayList<Lemma> lemmaList) {
+    public int[] getQueryPositionInTextForLemmaList(List<Lemma> lemmaList) {
         for (int searchBox = lemmaList.size(); searchBox < snippetSize; searchBox++) {
             for (int i = 0; i < wordList.size() - searchBox; i++) {
                 if (isQueryInSearchBox(i, searchBox)) {
@@ -40,7 +41,7 @@ public class SnippetSearch {
     }
 
     public boolean isQueryInSearchBox(int start, int searchBox) {
-        ArrayList<String> wordInSearchBox = new ArrayList<>();
+        List<String> wordInSearchBox = new ArrayList<>();
         for (int i = 0; i < searchBox; i++) {
             wordInSearchBox.add(wordList.get(i + start).getNormalForms());
         }
@@ -53,7 +54,7 @@ public class SnippetSearch {
     }
 
     public int[] getQueryPositionInText() {
-        ArrayList<Lemma> lemmaList = lemmaListFromQuery;
+        List<Lemma> lemmaList = lemmaListFromQuery;
         for (int i = 0; i < lemmaListFromQuery.size(); i++) {
             int[] queryPosition = getQueryPositionInTextForLemmaList(lemmaList);
             if (queryPosition == null) {

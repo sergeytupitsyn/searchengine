@@ -8,6 +8,7 @@ import org.jsoup.Jsoup;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Setter
 public class LemmaSearch {
@@ -24,10 +25,10 @@ public class LemmaSearch {
         }
     }
 
-    public HashMap<String, Integer> splitToLemmas(String text) {
+    public Map<String, Integer> splitToLemmas(String text) {
 
         String[] words = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
-        HashMap<String, Integer> lemmas = new HashMap<>();
+        Map<String, Integer> lemmas = new HashMap<>();
         for (String word : words) {
             if (word.isBlank()) {
                 continue;

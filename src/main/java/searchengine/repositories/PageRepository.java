@@ -18,9 +18,6 @@ public interface PageRepository extends JpaRepository<Page, Integer> {
     ArrayList<Page> findAllPageByPath(String path);
 
     @Transactional
-    Page findPageByPath(String path);
-
-    @Transactional
     ArrayList<Page> findAllPageByWebsite(Website website);
 
     @Transactional

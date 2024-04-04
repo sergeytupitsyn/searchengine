@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
@@ -33,9 +35,9 @@ public class IndexingServiceImpl implements IndexingService {
     private final SearchIndexRepository searchIndexRepository;
     private final SitesList sites;
     private boolean isIndexingStarted = false;
-    ArrayList<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
-    static ArrayList<Page> pageList = new ArrayList<>();
-    static ArrayList<String> parsedLinksList = new ArrayList<>();
+    List<ForkJoinPool> forkJoinPoolList;
+    static List<Page> pageList;
+    static List<String> parsedLinksList;
 
     @Override
     public IndexingResponse getStartResponse() {
@@ -90,8 +92,8 @@ public class IndexingServiceImpl implements IndexingService {
         saveIndexingDataInDB(INDEXED, "");
     }
 
-    synchronized public static ArrayList<Page> getPageList() {
-        ArrayList<Page> pageListClone = new ArrayList<>(pageList);
+    synchronized public static List<Page> getPageList() {
+        List<Page> pageListClone = new ArrayList<>(pageList);
         pageList.clear();
         return pageListClone;
     }
@@ -105,7 +107,7 @@ public class IndexingServiceImpl implements IndexingService {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException ignored) {}
-            ArrayList<Page> pageListToAddToDB = getPageList();
+            List<Page> pageListToAddToDB = getPageList();
             if (pageListToAddToDB.isEmpty()) {
                 isIndexingStarted = false;
                 sites.getSites().forEach(site -> finishIndexing(site, status, lastError));
@@ -126,8 +128,8 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     public boolean isPageInDB(Page page) {
-        ArrayList<Page> pagesInDB = pageRepository.findAllPageByPath(page.getPath());
-        ArrayList<Integer> websitesId = new ArrayList<>();
+        List<Page> pagesInDB = pageRepository.findAllPageByPath(page.getPath());
+        List<Integer> websitesId = new ArrayList<>();
         pagesInDB.forEach(pageInDB-> websitesId.add(pageInDB.getWebsite().getId()));
         return !pagesInDB.isEmpty() && websitesId.contains(page.getWebsite().getId());
     }
@@ -138,7 +140,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     public void saveLemmaInDB(Page page) {
-        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
+        Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
         for (String lemmaString : lemmas.keySet()) {
             Lemma lemma;
             if (!isLemmaInDB(lemmaString)) {
@@ -154,8 +156,8 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void removeSiteDataFromBD(Website website) {
         int id = website.getId();
-        ArrayList<Page> pages = pageRepository.findAllPageByWebsite(website);
-        ArrayList<Lemma> lemmas = lemmaRepository.findAllByWebsite(website);
+        List<Page> pages = pageRepository.findAllPageByWebsite(website);
+        List<Lemma> lemmas = lemmaRepository.findAllByWebsite(website);
         pages.forEach(searchIndexRepository::deleteAllByPage);
         lemmas.forEach(searchIndexRepository::deleteAllByLemma);
         lemmaRepository.deleteByWebsite(website);
@@ -183,7 +185,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void removePageDataFromBD(Page page) {
         searchIndexRepository.deleteAllByPage(page);
-        HashMap<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
+        Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
         for (String lemmaStr : lemmas.keySet()) {
             Lemma lemmaToDeleted = lemmaRepository.findByLemmaAndWebsite(lemmaStr, page.getWebsite());
             lemmaToDeleted.setFrequency(lemmaToDeleted.getFrequency() - 1);
