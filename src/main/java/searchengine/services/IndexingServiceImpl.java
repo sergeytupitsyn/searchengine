@@ -50,8 +50,9 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse getStopResponse() {
-        forkJoinPoolList.forEach(ForkJoinPool::shutdown);
+        forkJoinPoolList.forEach(ForkJoinPool::shutdownNow);
         if (isIndexingStarted) {
+            isIndexingStarted = false;
             sites.getSites().forEach(site -> finishIndexing(site, FAILED, "Индексация остановлена пользователем"));
             return new IndexingResponseTrue();
         } else {
@@ -111,14 +112,15 @@ public class IndexingServiceImpl implements IndexingService {
                 continue;
             }
             for (Page page : pageListToAddToDB) {
-                if (isPageInDB(page)) {
-                    continue;
+                if (!isPageInDB(page) && isIndexingStarted) {
+                    pageRepository.save(page);
+                    saveLemmaInDB(page);
+                    Website website = page.getWebsite();
+                    website.setStatusTime(LocalDateTime.now());
+                    if (isIndexingStarted) {
+                        websiteRepository.save(website);
+                    }
                 }
-                pageRepository.save(page);
-                saveLemmaInDB(page);
-                Website website = page.getWebsite();
-                website.setStatusTime(LocalDateTime.now());
-                websiteRepository.save(website);
             }
         }
     }
