@@ -17,7 +17,8 @@ public class SnippetSearch {
         this.text = text;
         this.lemmaListFromQuery = lemmaListFromQuery;
         LemmaSearch lemmaSearch = new LemmaSearch();
-        String[] contentSplitIntoWords = text.toLowerCase().replaceAll("([^а-я\\s])", "").trim().split("\\s+");
+        String[] contentSplitIntoWords = text.toLowerCase().replaceAll("([^а-я\\s])",
+                "").trim().split("\\s+");
         for (String string : contentSplitIntoWords) {
             Word word = new Word(string);
             word.setNormalForms(lemmaSearch.wordToLemmaString(string));

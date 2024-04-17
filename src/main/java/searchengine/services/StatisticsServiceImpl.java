@@ -52,7 +52,8 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setLemmas(lemmas);
             item.setStatus(website.getStatus().toString());
             item.setError(website.getLastError());
-            item.setStatusTime(website.getStatusTime().atZone(ZoneId.of("Europe/Moscow")).toInstant().toEpochMilli());
+            item.setStatusTime(website.getStatusTime().atZone(ZoneId.of(
+                    "Europe/Moscow")).toInstant().toEpochMilli());
             total.setPages(total.getPages() + pages);
             total.setLemmas(total.getLemmas() + lemmas);
             detailed.add(item);

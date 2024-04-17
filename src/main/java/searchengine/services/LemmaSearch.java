@@ -4,12 +4,15 @@ import lombok.Setter;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Service
 @Setter
 public class LemmaSearch {
 
@@ -27,7 +30,8 @@ public class LemmaSearch {
 
     public Map<String, Integer> splitToLemmas(String text) {
 
-        String[] words = text.toLowerCase().replaceAll("([^а-я\\s])","").trim().split("\\s+");
+        String[] words = text.toLowerCase().replaceAll("([^а-я\\s])",
+                "").trim().split("\\s+");
         Map<String, Integer> lemmas = new HashMap<>();
         for (String word : words) {
             if (word.isBlank()) {

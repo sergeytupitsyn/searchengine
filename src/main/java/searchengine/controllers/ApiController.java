@@ -18,7 +18,8 @@ public class ApiController {
     private final IndexingServiceImpl indexingService;
     private final SearchService searchService;
 
-    public ApiController(StatisticsService statisticsService, IndexingServiceImpl indexingService, SearchService searchService) {
+    public ApiController(StatisticsService statisticsService,
+                         IndexingServiceImpl indexingService, SearchService searchService) {
         this.statisticsService = statisticsService;
         this.indexingService = indexingService;
         this.searchService = searchService;

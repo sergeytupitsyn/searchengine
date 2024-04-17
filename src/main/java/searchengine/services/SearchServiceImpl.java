@@ -1,23 +1,26 @@
 package searchengine.services;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
-import searchengine.config.SitesList;
-import searchengine.dto.search.*;
+import searchengine.dto.search.SearchData;
+import searchengine.dto.search.SearchResponse;
+import searchengine.dto.search.SearchResponseFalse;
+import searchengine.dto.search.SearchResponseTrue;
 import searchengine.model.Lemma;
 import searchengine.model.Page;
 import searchengine.model.SearchIndex;
-import searchengine.model.Website;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SearchIndexRepository;
-import searchengine.repositories.WebsiteRepository;
-
-import java.io.IOException;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +28,11 @@ public class SearchServiceImpl implements SearchService {
 
     private final PageRepository pageRepository;
     private final LemmaRepository lemmaRepository;
-    private final SearchIndexRepository searchIndexRepository;;
+    private final SearchIndexRepository searchIndexRepository;
 
     @Override
-    public SearchResponse getSearchResponse(String query, String sait, int offset, int limit) {
+    public SearchResponse getSearchResponse(String query, String sait,
+                                            int offset, int limit) {
         if (query.isEmpty()) {
             return new SearchResponseFalse("Задан пустой поисковый запрос");
         }
@@ -41,7 +45,8 @@ public class SearchServiceImpl implements SearchService {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
         List<Page> trimmedPageListToResponse = trimToLimit(pageListToResponse, limit, offset);
-        Map<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery, trimmedPageListToResponse);
+        Map<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery,
+                trimmedPageListToResponse);
         List<SearchData> data = new ArrayList<>();
         for (Page page : pageListWithRelevance.keySet()) {
             SearchData searchData = new SearchData();
@@ -49,7 +54,8 @@ public class SearchServiceImpl implements SearchService {
             searchData.setSiteName(page.getWebsite().getName());
             searchData.setUri(page.getPath().substring(1));
             searchData.setTitle(getTitle(page));
-            searchData.setSnippet(new SnippetSearch(page.getContent(), lemmasListFromQuery).getSnippet());
+            searchData.setSnippet(new SnippetSearch(page.getContent(),
+                    lemmasListFromQuery).getSnippet());
             searchData.setRelevance(pageListWithRelevance.get(page));
             data.add(searchData);
         }
@@ -62,7 +68,8 @@ public class SearchServiceImpl implements SearchService {
 
     public String getTitle(Page page) {
         try {
-            Document document = Jsoup.connect(page.getWebsite().getUrl() + page.getPath().substring(1)).get();
+            Document document = Jsoup.connect(page.getWebsite().getUrl()
+                    + page.getPath().substring(1)).get();
             Element element = document.selectFirst("title");
             if (element != null) {
                 return element.text();
@@ -73,7 +80,8 @@ public class SearchServiceImpl implements SearchService {
         }
     }
 
-    public Map<Page, Float> getPageListWithRelevance (List<Lemma> lemmasListFromQuery, List<Page> pagesList) {
+    public Map<Page, Float> getPageListWithRelevance (List<Lemma> lemmasListFromQuery,
+                                                      List<Page> pagesList) {
         Map<Page, Float> pageListWithRelevance = new HashMap<>();
         float maxRank = 0;
         for (Page page : pagesList) {

@@ -1,5 +1,12 @@
 package searchengine.services;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
@@ -12,17 +19,6 @@ import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SearchIndexRepository;
 import searchengine.repositories.WebsiteRepository;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-
 import static searchengine.model.IndexingStatus.*;
 
 @Service
@@ -34,10 +30,11 @@ public class IndexingServiceImpl implements IndexingService {
     private final LemmaRepository lemmaRepository;
     private final SearchIndexRepository searchIndexRepository;
     private final SitesList sites;
+    private final LemmaSearch lemmaSearch;
     private boolean isIndexingStarted = false;
-    List<ForkJoinPool> forkJoinPoolList;
-    static List<Page> pageList;
-    static List<String> parsedLinksList;
+    List<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
+    static List<Page> pageList = new ArrayList<>();
+    static List<String> parsedLinksList = new ArrayList<>();
 
     @Override
     public IndexingResponse getStartResponse() {
@@ -55,7 +52,8 @@ public class IndexingServiceImpl implements IndexingService {
         forkJoinPoolList.forEach(ForkJoinPool::shutdownNow);
         if (isIndexingStarted) {
             isIndexingStarted = false;
-            sites.getSites().forEach(site -> finishIndexing(site, FAILED, "Индексация остановлена пользователем"));
+            sites.getSites().forEach(site -> finishIndexing(site, FAILED,
+                    "Индексация остановлена пользователем"));
             return new IndexingResponseTrue();
         } else {
             return new IndexingResponseFalse("Индексация не запущена");
@@ -140,7 +138,7 @@ public class IndexingServiceImpl implements IndexingService {
     }
 
     public void saveLemmaInDB(Page page) {
-        Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(page.getContent());
+        Map<String, Integer> lemmas = lemmaSearch.splitToLemmas(page.getContent());
         for (String lemmaString : lemmas.keySet()) {
             Lemma lemma;
             if (!isLemmaInDB(lemmaString)) {
@@ -175,7 +173,8 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void indexingPage(String url, Site site) {
         Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
-        Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(website.getUrl().length() - 1), website);
+        Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(
+                website.getUrl().length() - 1), website);
         removePageDataFromBD(newlyIndexedPage);
         isIndexingStarted = true;
         RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl());
