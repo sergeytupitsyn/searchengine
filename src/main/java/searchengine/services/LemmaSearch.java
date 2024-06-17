@@ -4,9 +4,10 @@ import lombok.Setter;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
-import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
+import searchengine.Application;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,8 @@ public class LemmaSearch {
         try {
             luceneMorphology = new RussianLuceneMorphology();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
         }
     }
 

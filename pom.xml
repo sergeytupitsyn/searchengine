@@ -48,7 +48,6 @@
             <artifactId>jsoup</artifactId>
             <version>1.15.4</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.lucene.morphology</groupId>
             <artifactId>morph</artifactId>
@@ -73,6 +72,15 @@
             <groupId>org.apache.lucene.morphology</groupId>
             <artifactId>russian</artifactId>
             <version>1.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
 
     </dependencies>

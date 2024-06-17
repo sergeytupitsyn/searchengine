@@ -14,6 +14,7 @@ import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.WebsiteRepository;
 
+import java.sql.SQLException;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;

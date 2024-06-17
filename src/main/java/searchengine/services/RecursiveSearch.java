@@ -4,7 +4,10 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import searchengine.Application;
 import searchengine.model.Page;
 import searchengine.model.Website;
 import java.io.IOException;
@@ -24,11 +27,6 @@ public class RecursiveSearch extends RecursiveAction {
 
     @Override
     protected void compute() {
-        try {
-            sleep(1500);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         List<String> linksThisPage;
         linksThisPage = pageParser(parentLink);
         if (!linksThisPage.isEmpty()) {
@@ -44,7 +42,9 @@ public class RecursiveSearch extends RecursiveAction {
         try {
             sleep(1200);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
+            Thread.currentThread().interrupt();
         }
         List<String> linkList = new ArrayList<>();
         String path = link.substring(website.getUrl().length() - 1);
@@ -52,28 +52,35 @@ public class RecursiveSearch extends RecursiveAction {
         try {
             response = Jsoup.connect(link).execute();
         } catch (IOException e) {
-            System.out.println("ошибка при Jsoup.connect(link).execute() " + e);
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
         }
         int responseCode = response != null ? response.statusCode() : 404;
         String content = "";
         if (responseCode == 200) {
             Document doc = null;
+            Elements elements = null;
             try {
                 doc = response.parse();
             } catch (IOException e) {
-                System.out.println("ошибка при response.parse() " + e);
+                Logger logger = LoggerFactory.getLogger(Application.class);
+                logger.error(e.getMessage());
             }
-            content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
-            Elements elements = doc.select("a[href]");
-            elements.forEach(element -> {
-                String childLink = element.attr("abs:href");
-                if (childLink.startsWith(website.getUrl())
-                        && !IndexingServiceImpl.parsedLinksList.contains(childLink)
-                        && isLinkCorrect(childLink)) {
-                    linkList.add(childLink);
-                    IndexingServiceImpl.parsedLinksList.add(childLink);
-                }
-            });
+            if (doc != null) {
+                content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
+                elements = doc.select("a[href]");
+            }
+            if (elements != null) {
+                elements.forEach(element -> {
+                    String childLink = element.attr("abs:href");
+                    if (childLink.startsWith(website.getUrl())
+                            && !IndexingServiceImpl.parsedLinksList.contains(childLink)
+                            && isLinkCorrect(childLink)) {
+                        linkList.add(childLink);
+                        IndexingServiceImpl.parsedLinksList.add(childLink);
+                    }
+                });
+            }
         }
         IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content));
         return linkList;

@@ -1,9 +1,7 @@
 package searchengine.services;
 
 import searchengine.model.Lemma;
-
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class SnippetSearch {
