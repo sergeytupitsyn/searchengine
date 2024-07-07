@@ -3,6 +3,7 @@ package searchengine.services;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -37,7 +38,7 @@ public class IndexingServiceImpl implements IndexingService {
     private final LemmaSearch lemmaSearch;
     private boolean isIndexingStarted = false;
     List<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
-    static List<Page> pageList = new ArrayList<>();
+    static Map<Page, Map<String, Integer>> pageList = new HashMap<>();
     static List<String> parsedLinksList = new ArrayList<>();
 
     @Override
@@ -116,14 +117,15 @@ public class IndexingServiceImpl implements IndexingService {
         }
     }
 
-    synchronized public static List<Page> getPageList() {
-        List<Page> pageListClone = new ArrayList<>(pageList);
+    synchronized public static Map<Page, Map<String, Integer>> getPageList() {
+        Map<Page, Map<String, Integer>> pageListClone = new HashMap<>(pageList);
         pageList.clear();
+        System.out.println("pageListSize" + pageListClone.size());
         return pageListClone;
     }
 
-    synchronized static void writeInPageList(Page page) {
-        pageList.add(page);
+    synchronized static void writeInPageList(Page page, Map<String, Integer> lemmas) {
+        pageList.put(page, lemmas);
     }
 
     public void saveIndexingDataInDB(IndexingStatus status, String lastError) throws SQLException {
@@ -135,7 +137,7 @@ public class IndexingServiceImpl implements IndexingService {
                 logger.error(e.getMessage());
                 Thread.currentThread().interrupt();
             }
-            List<Page> pageListToAddToDB = getPageList();
+            Map<Page, Map<String, Integer>> pageListToAddToDB = getPageList();
             if (pageListToAddToDB.isEmpty()) {
                 isIndexingStarted = false;
                 for (Site site : sites.getSites()) {
@@ -143,10 +145,10 @@ public class IndexingServiceImpl implements IndexingService {
                 }
                 continue;
             }
-            for (Page page : pageListToAddToDB) {
+            for (Page page : pageListToAddToDB.keySet()) {
                 if (!isPageInDB(page) && isIndexingStarted) {
                     pageRepository.save(page);
-                    saveLemmaInDB(page);
+                    saveLemmaInDB(page, pageListToAddToDB.get(page));
                     Website website = page.getWebsite();
                     website.setStatusTime(LocalDateTime.now());
                     if (isIndexingStarted) {
@@ -169,8 +171,7 @@ public class IndexingServiceImpl implements IndexingService {
         return lemma != null;
     }
 
-    public void saveLemmaInDB(Page page) throws SQLException{
-        Map<String, Integer> lemmas = lemmaSearch.splitToLemmas(page.getContent());
+    public void saveLemmaInDB(Page page, Map<String, Integer> lemmas) throws SQLException{
         for (String lemmaString : lemmas.keySet()) {
             Lemma lemma;
             if (!isLemmaInDB(lemmaString)) {

@@ -13,6 +13,7 @@ import searchengine.model.Website;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
 
@@ -46,6 +47,7 @@ public class RecursiveSearch extends RecursiveAction {
             logger.error(e.getMessage());
             Thread.currentThread().interrupt();
         }
+        long start = System.currentTimeMillis();
         List<String> linkList = new ArrayList<>();
         String path = link.substring(website.getUrl().length() - 1);
         Connection.Response response = null;
@@ -82,7 +84,9 @@ public class RecursiveSearch extends RecursiveAction {
                 });
             }
         }
-        IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content));
+        Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
+        IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content), lemmas);
+        System.out.println(System.currentTimeMillis() - start);
         return linkList;
     }
 
