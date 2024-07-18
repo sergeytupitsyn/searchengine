@@ -106,7 +106,7 @@ public class IndexingServiceImpl implements IndexingService {
             websiteRepository.save(website);
             ForkJoinPool forkJoinPool = new ForkJoinPool();
             forkJoinPoolList.add(forkJoinPool);
-            RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl());
+            RecursiveSearch recursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
             forkJoinPool.invoke(recursiveSearch);
         }
         try {
@@ -131,7 +131,7 @@ public class IndexingServiceImpl implements IndexingService {
     public void saveIndexingDataInDB(IndexingStatus status, String lastError) throws SQLException {
         while (isIndexingStarted) {
             try {
-                Thread.sleep(10000);
+                Thread.sleep(1000000);
             } catch (InterruptedException e) {
                 Logger logger = LoggerFactory.getLogger(Application.class);
                 logger.error(e.getMessage());
@@ -210,7 +210,7 @@ public class IndexingServiceImpl implements IndexingService {
                 website.getUrl().length() - 1), website);
         removePageDataFromBD(newlyIndexedPage);
         isIndexingStarted = true;
-        RecursiveSearch recursiveSearch = new RecursiveSearch(website, site.getUrl());
+        RecursiveSearch recursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
         recursiveSearch.pageParser(url);
         saveIndexingDataInDB(INDEXED, "");
     }

@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.NoArgsConstructor;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -7,21 +8,38 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import searchengine.Application;
-import searchengine.model.Page;
-import searchengine.model.Website;
+import searchengine.model.*;
+import searchengine.repositories.LemmaRepository;
+import searchengine.repositories.PageRepository;
+import searchengine.repositories.SearchIndexRepository;
+import searchengine.repositories.WebsiteRepository;
+
 import java.io.IOException;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.RecursiveAction;
 import static java.lang.Thread.sleep;
 
+@NoArgsConstructor
 public class RecursiveSearch extends RecursiveAction {
-    private final Website website;
-    private final String parentLink;
+    private PageRepository pageRepository;
+    private WebsiteRepository websiteRepository;
+    private LemmaRepository lemmaRepository;
+    private SearchIndexRepository searchIndexRepository;
+    private Website website;
+    private String parentLink;
 
-    public RecursiveSearch(Website website, String parentLink) {
+    public RecursiveSearch(PageRepository pageRepository, WebsiteRepository websiteRepository, LemmaRepository lemmaRepository, SearchIndexRepository searchIndexRepository, Website website, String parentLink) {
+        this.pageRepository = pageRepository;
+        this.websiteRepository = websiteRepository;
+        this.lemmaRepository = lemmaRepository;
+        this.searchIndexRepository = searchIndexRepository;
         this.website = website;
         this.parentLink = parentLink;
     }
@@ -32,7 +50,7 @@ public class RecursiveSearch extends RecursiveAction {
         linksThisPage = pageParser(parentLink);
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
-                RecursiveSearch action = new RecursiveSearch(website, link);
+                RecursiveSearch action = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, link);
                 action.fork();
             }
         }
@@ -85,9 +103,50 @@ public class RecursiveSearch extends RecursiveAction {
             }
         }
         Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
-        IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content), lemmas);
+        //IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content), lemmas);
+        try {
+            saveIndexingDataInDB(IndexingStatus.INDEXING, "", new Page(website, path, responseCode, content), lemmas);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         System.out.println(System.currentTimeMillis() - start);
         return linkList;
+    }
+
+    public void saveIndexingDataInDB(IndexingStatus status, String lastError, Page page, Map<String, Integer> lemmas) throws SQLException {
+        if (!isPageInDB(page)) {
+            pageRepository.save(page);
+            saveLemmaInDB(page, lemmas);
+            Website website = page.getWebsite();
+            website.setStatusTime(LocalDateTime.now());
+            websiteRepository.save(website);
+        }
+    }
+
+    public void saveLemmaInDB(Page page, Map<String, Integer> lemmas) throws SQLException{
+        for (String lemmaString : lemmas.keySet()) {
+            Lemma lemma;
+            if (!isLemmaInDB(lemmaString)) {
+                lemma = new Lemma(page.getWebsite(), lemmaString, 1);
+            } else {
+                lemma = lemmaRepository.findByLemma(lemmaString);
+                lemma.setFrequency(lemma.getFrequency() + 1);
+            }
+            lemmaRepository.save(lemma);
+            searchIndexRepository.save(new SearchIndex(page, lemma, lemmas.get(lemmaString)));
+        }
+    }
+
+    public boolean isPageInDB(Page page) throws SQLException {
+        List<Page> pagesInDB = pageRepository.findAllPageByPath(page.getPath());
+        List<Integer> websitesId = new ArrayList<>();
+        pagesInDB.forEach(pageInDB-> websitesId.add(pageInDB.getWebsite().getId()));
+        return !pagesInDB.isEmpty() && websitesId.contains(page.getWebsite().getId());
+    }
+
+    public boolean isLemmaInDB(String lemmaString) throws SQLException{
+        Lemma lemma = lemmaRepository.findByLemma(lemmaString);
+        return lemma != null;
     }
 
     public boolean isLinkCorrect(String link) {
