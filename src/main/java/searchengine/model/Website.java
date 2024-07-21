@@ -37,9 +37,10 @@ public class Website {
     public Website() {
     }
 
-    public Website(IndexingStatus status, LocalDateTime statusTime, String url, String name) {
+    public Website(IndexingStatus status, LocalDateTime statusTime, String lastError, String url, String name) {
         this.status = status;
         this.statusTime = statusTime;
+        this.lastError = lastError;
         this.url = url;
         this.name = name;
     }

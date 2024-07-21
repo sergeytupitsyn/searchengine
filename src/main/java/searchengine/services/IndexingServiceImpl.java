@@ -35,10 +35,8 @@ public class IndexingServiceImpl implements IndexingService {
     private final LemmaRepository lemmaRepository;
     private final SearchIndexRepository searchIndexRepository;
     private final SitesList sites;
-    private final LemmaSearch lemmaSearch;
-    private boolean isIndexingStarted = false;
-    List<ForkJoinPool> forkJoinPoolList = new ArrayList<>();
-    static Map<Page, Map<String, Integer>> pageList = new HashMap<>();
+    static boolean isIndexingStarted = false;
+    Map<ForkJoinPool, Site> forkJoinPoolList = new HashMap<>();
     static List<String> parsedLinksList = new ArrayList<>();
 
     @Override
@@ -54,9 +52,16 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse getStopResponse() {
-        forkJoinPoolList.forEach(ForkJoinPool::shutdownNow);
+        forkJoinPoolList.keySet().forEach(ForkJoinPool::shutdownNow);
         if (isIndexingStarted) {
             isIndexingStarted = false;
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException e) {
+                Logger logger = LoggerFactory.getLogger(Application.class);
+                logger.error(e.getMessage());
+                Thread.currentThread().interrupt();
+            }
             sites.getSites().forEach(site -> {
                 try {
                     finishIndexing(site, FAILED,
@@ -74,19 +79,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse getIndexPageResponse(String url) {
-        for (Site site : sites.getSites()) {
-            if (url.startsWith(site.getUrl())) {
-                try {
-                    indexingPage(url, site);
-                } catch (SQLException e) {
-                    Logger logger = LoggerFactory.getLogger(Application.class);
-                    logger.error(e.getSQLState());
-                }
-                return new IndexingResponseTrue();
-            }
-        }
-        return new IndexingResponseFalse("Данная страница находится за пределами сайтов, " +
-                "указанных в конфигурационном файле");
+        return null;
     }
 
     public void startIndexing() {
@@ -102,88 +95,66 @@ public class IndexingServiceImpl implements IndexingService {
                     logger.error(e.getSQLState());
                 }
             }
-            Website website = new Website(INDEXING, LocalDateTime.now(), site.getUrl(), site.getName());
+            Website website = new Website(INDEXING, LocalDateTime.now(), "", site.getUrl(), site.getName());
             websiteRepository.save(website);
             ForkJoinPool forkJoinPool = new ForkJoinPool();
-            forkJoinPoolList.add(forkJoinPool);
-            RecursiveSearch recursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
+            forkJoinPoolList.put(forkJoinPool, site);
+            RecursiveSearch recursiveSearch = new RecursiveSearch(pageRepository, websiteRepository,
+                    lemmaRepository, searchIndexRepository, website, site.getUrl());
             forkJoinPool.invoke(recursiveSearch);
         }
         try {
-            saveIndexingDataInDB(INDEXED, "");
+            waitingForIndexingToFinish();
         } catch (SQLException e) {
             Logger logger = LoggerFactory.getLogger(Application.class);
             logger.error(e.getSQLState());
         }
+
     }
 
-    synchronized public static Map<Page, Map<String, Integer>> getPageList() {
-        Map<Page, Map<String, Integer>> pageListClone = new HashMap<>(pageList);
-        pageList.clear();
-        System.out.println("pageListSize" + pageListClone.size());
-        return pageListClone;
-    }
-
-    synchronized static void writeInPageList(Page page, Map<String, Integer> lemmas) {
-        pageList.put(page, lemmas);
-    }
-
-    public void saveIndexingDataInDB(IndexingStatus status, String lastError) throws SQLException {
+    public void waitingForIndexingToFinish() throws SQLException {
         while (isIndexingStarted) {
             try {
-                Thread.sleep(1000000);
+                Thread.sleep(60000);
             } catch (InterruptedException e) {
                 Logger logger = LoggerFactory.getLogger(Application.class);
                 logger.error(e.getMessage());
                 Thread.currentThread().interrupt();
             }
-            Map<Page, Map<String, Integer>> pageListToAddToDB = getPageList();
-            if (pageListToAddToDB.isEmpty()) {
+            if (!isIndexingStarted) {
+                break;
+            }
+            boolean allSitesAreIndexed = true;
+            for (ForkJoinPool forkJoinPool : forkJoinPoolList.keySet()) {
+
+                if (forkJoinPool.getPoolSize() == 0) {
+                    finishIndexing(forkJoinPoolList.get(forkJoinPool), INDEXED, "");
+                } else {
+                    allSitesAreIndexed = false;
+                }
+            }
+            if (allSitesAreIndexed) {
                 isIndexingStarted = false;
-                for (Site site : sites.getSites()) {
-                    finishIndexing(site, status, lastError);
-                }
-                continue;
-            }
-            for (Page page : pageListToAddToDB.keySet()) {
-                if (!isPageInDB(page) && isIndexingStarted) {
-                    pageRepository.save(page);
-                    saveLemmaInDB(page, pageListToAddToDB.get(page));
-                    Website website = page.getWebsite();
-                    website.setStatusTime(LocalDateTime.now());
-                    if (isIndexingStarted) {
-                        websiteRepository.save(website);
-                    }
-                }
             }
         }
     }
 
-    public boolean isPageInDB(Page page) throws SQLException{
-        List<Page> pagesInDB = pageRepository.findAllPageByPath(page.getPath());
-        List<Integer> websitesId = new ArrayList<>();
-        pagesInDB.forEach(pageInDB-> websitesId.add(pageInDB.getWebsite().getId()));
-        return !pagesInDB.isEmpty() && websitesId.contains(page.getWebsite().getId());
-    }
-
-    public boolean isLemmaInDB(String lemmaString) throws SQLException{
-        Lemma lemma = lemmaRepository.findByLemma(lemmaString);
-        return lemma != null;
-    }
-
-    public void saveLemmaInDB(Page page, Map<String, Integer> lemmas) throws SQLException{
-        for (String lemmaString : lemmas.keySet()) {
-            Lemma lemma;
-            if (!isLemmaInDB(lemmaString)) {
-                lemma = new Lemma(page.getWebsite(), lemmaString, 1);
-            } else {
-                lemma = lemmaRepository.findByLemma(lemmaString);
-                lemma.setFrequency(lemma.getFrequency() + 1);
+/*    @Override
+    public IndexingResponse getIndexPageResponse(String url) {
+        for (Site site : sites.getSites()) {
+            if (url.startsWith(site.getUrl())) {
+                try {
+                    indexingPage(url, site);
+                } catch (SQLException e) {
+                    Logger logger = LoggerFactory.getLogger(Application.class);
+                    logger.error(e.getSQLState());
+                }
+                return new IndexingResponseTrue();
             }
-            lemmaRepository.save(lemma);
-            searchIndexRepository.save(new SearchIndex(page, lemma, lemmas.get(lemmaString)));
         }
-    }
+        return new IndexingResponseFalse("Данная страница находится за пределами сайтов, " +
+                "указанных в конфигурационном файле");
+    }*/
 
     public void removeSiteDataFromBD(Website website) throws SQLException{
         int id = website.getId();
@@ -204,13 +175,13 @@ public class IndexingServiceImpl implements IndexingService {
         websiteRepository.save(website);
     }
 
-    public void indexingPage(String url, Site site) throws SQLException{
-        Website website = websiteRepository.findWebsiteByUrl(site.getUrl());
+/*    public void indexingPage(String url, Site site) throws SQLException{
+        Website = websiteRepository.findWebsiteByUrl(site.getUrl());
         Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(
                 website.getUrl().length() - 1), website);
         removePageDataFromBD(newlyIndexedPage);
         isIndexingStarted = true;
-        RecursiveSearch recursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
+        RecursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
         recursiveSearch.pageParser(url);
         saveIndexingDataInDB(INDEXED, "");
     }
@@ -228,5 +199,5 @@ public class IndexingServiceImpl implements IndexingService {
             lemmaRepository.save(lemmaToDeleted);
         }
         pageRepository.delete(page);
-    }
+    }*/
 }

@@ -65,7 +65,6 @@ public class RecursiveSearch extends RecursiveAction {
             logger.error(e.getMessage());
             Thread.currentThread().interrupt();
         }
-        long start = System.currentTimeMillis();
         List<String> linkList = new ArrayList<>();
         String path = link.substring(website.getUrl().length() - 1);
         Connection.Response response = null;
@@ -103,18 +102,16 @@ public class RecursiveSearch extends RecursiveAction {
             }
         }
         Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
-        //IndexingServiceImpl.writeInPageList(new Page(website, path, responseCode, content), lemmas);
         try {
             saveIndexingDataInDB(IndexingStatus.INDEXING, "", new Page(website, path, responseCode, content), lemmas);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(System.currentTimeMillis() - start);
         return linkList;
     }
 
     public void saveIndexingDataInDB(IndexingStatus status, String lastError, Page page, Map<String, Integer> lemmas) throws SQLException {
-        if (!isPageInDB(page)) {
+        if (!isPageInDB(page) && IndexingServiceImpl.isIndexingStarted) {
             pageRepository.save(page);
             saveLemmaInDB(page, lemmas);
             Website website = page.getWebsite();

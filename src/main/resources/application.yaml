@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    username: user
-    password: 654321
-    url: jdbc:mysql://127.0.0.1:3307/db_searchengine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: Gslsuhtpl-43
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false
   jpa:
     properties:
       hibernate:
@@ -16,10 +16,10 @@ spring:
 
 indexing-settings:
   sites:
-    - url: https://dombulgakova.ru/
-      name: Булгаковский дом
-    - url: https://et-cetera.ru/mobile/
-      name: Театр «Et Cetera»
+    - url: https://sendel.ru/
+      name: Konstantin Shibkov
+    - url: https://nikoartgallery.com/
+      name: Niko
 
 jsoup-setting:
   jsoup:
