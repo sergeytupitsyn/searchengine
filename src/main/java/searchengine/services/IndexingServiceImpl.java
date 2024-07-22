@@ -77,11 +77,6 @@ public class IndexingServiceImpl implements IndexingService {
         }
     }
 
-    @Override
-    public IndexingResponse getIndexPageResponse(String url) {
-        return null;
-    }
-
     public void startIndexing() {
         isIndexingStarted = true;
         parsedLinksList.clear();
@@ -139,7 +134,7 @@ public class IndexingServiceImpl implements IndexingService {
         }
     }
 
-/*    @Override
+    @Override
     public IndexingResponse getIndexPageResponse(String url) {
         for (Site site : sites.getSites()) {
             if (url.startsWith(site.getUrl())) {
@@ -154,7 +149,7 @@ public class IndexingServiceImpl implements IndexingService {
         }
         return new IndexingResponseFalse("Данная страница находится за пределами сайтов, " +
                 "указанных в конфигурационном файле");
-    }*/
+    }
 
     public void removeSiteDataFromBD(Website website) throws SQLException{
         int id = website.getId();
@@ -175,15 +170,15 @@ public class IndexingServiceImpl implements IndexingService {
         websiteRepository.save(website);
     }
 
-/*    public void indexingPage(String url, Site site) throws SQLException{
-        Website = websiteRepository.findWebsiteByUrl(site.getUrl());
+    public void indexingPage(String url, Site site) throws SQLException{
+        isIndexingStarted = true;
+        Website website= websiteRepository.findWebsiteByUrl(site.getUrl());
         Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(
                 website.getUrl().length() - 1), website);
         removePageDataFromBD(newlyIndexedPage);
-        isIndexingStarted = true;
-        RecursiveSearch = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
+        RecursiveSearch recursiveSearch= new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
         recursiveSearch.pageParser(url);
-        saveIndexingDataInDB(INDEXED, "");
+        waitingForIndexingToFinish();
     }
 
     public void removePageDataFromBD(Page page) throws SQLException {
@@ -199,5 +194,5 @@ public class IndexingServiceImpl implements IndexingService {
             lemmaRepository.save(lemmaToDeleted);
         }
         pageRepository.delete(page);
-    }*/
+    }
 }
