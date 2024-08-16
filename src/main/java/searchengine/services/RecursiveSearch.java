@@ -8,8 +8,6 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import searchengine.Application;
 import searchengine.model.*;
 import searchengine.repositories.LemmaRepository;
@@ -35,7 +33,9 @@ public class RecursiveSearch extends RecursiveAction {
     private Website website;
     private String parentLink;
 
-    public RecursiveSearch(PageRepository pageRepository, WebsiteRepository websiteRepository, LemmaRepository lemmaRepository, SearchIndexRepository searchIndexRepository, Website website, String parentLink) {
+    public RecursiveSearch(PageRepository pageRepository, WebsiteRepository websiteRepository,
+                           LemmaRepository lemmaRepository, SearchIndexRepository searchIndexRepository,
+                           Website website, String parentLink) {
         this.pageRepository = pageRepository;
         this.websiteRepository = websiteRepository;
         this.lemmaRepository = lemmaRepository;
@@ -50,7 +50,8 @@ public class RecursiveSearch extends RecursiveAction {
         linksThisPage = pageParser(parentLink);
         if (!linksThisPage.isEmpty()) {
             for (String link : linksThisPage) {
-                RecursiveSearch action = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, link);
+                RecursiveSearch action = new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository,
+                        searchIndexRepository, website, link);
                 action.fork();
             }
         }
@@ -65,8 +66,6 @@ public class RecursiveSearch extends RecursiveAction {
             logger.error(e.getMessage());
             Thread.currentThread().interrupt();
         }
-        List<String> linkList = new ArrayList<>();
-        String path = link.substring(website.getUrl().length() - 1);
         Connection.Response response = null;
         try {
             response = Jsoup.connect(link).execute();
@@ -75,42 +74,64 @@ public class RecursiveSearch extends RecursiveAction {
             logger.error(e.getMessage());
         }
         int responseCode = response != null ? response.statusCode() : 404;
-        String content = "";
         if (responseCode == 200) {
-            Document doc = null;
-            Elements elements = null;
+            String content = getContent(response);
+            List<String> linkList = getLinkList(response);
+            Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
+            String path = link.substring(website.getUrl().length() - 1);
             try {
-                doc = response.parse();
-            } catch (IOException e) {
+                saveIndexingDataInDB( new Page(website, path, responseCode, content), lemmas);
+            } catch (SQLException e) {
                 Logger logger = LoggerFactory.getLogger(Application.class);
                 logger.error(e.getMessage());
             }
-            if (doc != null) {
-                content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
-                elements = doc.select("a[href]");
-            }
-            if (elements != null) {
-                elements.forEach(element -> {
-                    String childLink = element.attr("abs:href");
-                    if (childLink.startsWith(website.getUrl())
-                            && !IndexingServiceImpl.parsedLinksList.contains(childLink)
-                            && isLinkCorrect(childLink)) {
-                        linkList.add(childLink);
-                        IndexingServiceImpl.parsedLinksList.add(childLink);
-                    }
-                });
-            }
+            return linkList;
         }
-        Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
+        return new ArrayList<String>();
+    }
+
+    public String getContent(Connection.Response response) {
+        String content = "";
+        Document doc = null;
         try {
-            saveIndexingDataInDB(IndexingStatus.INDEXING, "", new Page(website, path, responseCode, content), lemmas);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            doc = response.parse();
+        } catch (IOException e) {
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
+        }
+        if (doc != null) {
+            content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
+        }
+        return content;
+    }
+    public List<String> getLinkList(Connection.Response response) {
+        Document doc = null;
+        Elements elements = null;
+        List<String> linkList = new ArrayList<>();
+        try {
+            doc = response.parse();
+        } catch (IOException e) {
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
+        }
+        if (doc != null) {
+            elements = doc.select("a[href]");
+        }
+        if (elements != null) {
+            elements.forEach(element -> {
+                String childLink = element.attr("abs:href");
+                if (childLink.startsWith(website.getUrl())
+                        && !IndexingServiceImpl.parsedLinksList.contains(childLink)
+                        && isLinkCorrect(childLink)) {
+                    linkList.add(childLink);
+                    IndexingServiceImpl.parsedLinksList.add(childLink);
+                }
+            });
         }
         return linkList;
     }
 
-    public void saveIndexingDataInDB(IndexingStatus status, String lastError, Page page, Map<String, Integer> lemmas) throws SQLException {
+    public void saveIndexingDataInDB(Page page, Map<String, Integer> lemmas) throws SQLException {
         if (!isPageInDB(page) && IndexingServiceImpl.isIndexingStarted) {
             pageRepository.save(page);
             saveLemmaInDB(page, lemmas);
