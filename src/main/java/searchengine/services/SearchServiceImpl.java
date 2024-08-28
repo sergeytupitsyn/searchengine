@@ -1,21 +1,16 @@
 package searchengine.services;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.apache.lucene.search.spans.SpanOrQuery;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import searchengine.Application;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponse;
 import searchengine.dto.search.SearchResponseFalse;
@@ -41,35 +36,25 @@ public class SearchServiceImpl implements SearchService {
         if (query.isEmpty()) {
             return new SearchResponseFalse("Задан пустой поисковый запрос");
         }
-        List<Lemma> lemmasListFromQuery = null;
-        try {
-            lemmasListFromQuery = getLemmaList(query);
-        } catch (SQLException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getSQLState());
+        if (isQueryCorrect(query)) {
+            return new SearchResponseFalse("Запрос должен быть на русском языке");
         }
+        List<Lemma> lemmasListFromQuery = getLemmaList(query);
         if (lemmasListFromQuery.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
-        List<Page> pageListToResponse = null;
-        try {
-            pageListToResponse = getPageListByLemmaList(lemmasListFromQuery, sait);
-        } catch (SQLException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getSQLState());
-        }
+        List<Page> pageListToResponse = getPageListByLemmaList(lemmasListFromQuery, sait);
         if (pageListToResponse.isEmpty()) {
             return new SearchResponseFalse("Указанная страница не найдена");
         }
         List<Page> trimmedPageListToResponse = trimToLimit(pageListToResponse, limit, offset);
-        Map<Page, Float> pageListWithRelevance = null;
-        try {
-            pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery,
-                    trimmedPageListToResponse);
-        } catch (SQLException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getSQLState());
-        }
+        Map<Page, Float> pageListWithRelevance = getPageListWithRelevance(lemmasListFromQuery,
+                trimmedPageListToResponse);
+        return getSearchResponseTrue(pageListWithRelevance, lemmasListFromQuery, pageListToResponse);
+    }
+
+    public SearchResponseTrue getSearchResponseTrue(Map<Page, Float> pageListWithRelevance,
+                                                    List<Lemma> lemmasListFromQuery, List<Page> pageListToResponse) {
         List<SearchData> data = new ArrayList<>();
         for (Page page : pageListWithRelevance.keySet()) {
             SearchData searchData = new SearchData();
@@ -89,6 +74,11 @@ public class SearchServiceImpl implements SearchService {
         return searchResponseTrue;
     }
 
+    public boolean isQueryCorrect(String query) {
+        String regex = "[А-Яа-яёЁ\\d\\s\\p{Punct}]+";
+        return !query.matches(regex);
+    }
+
     public String getTitle(Page page) {
         try {
             Document document = Jsoup.connect(page.getWebsite().getUrl()
@@ -104,7 +94,7 @@ public class SearchServiceImpl implements SearchService {
     }
 
     public Map<Page, Float> getPageListWithRelevance(List<Lemma> lemmasListFromQuery,
-                                                      List<Page> pagesList) throws SQLException{
+                                                      List<Page> pagesList) {
         Map<Page, Float> pageListWithRelevance = new HashMap<>();
         float maxRank = 0;
         for (Page page : pagesList) {
@@ -124,7 +114,7 @@ public class SearchServiceImpl implements SearchService {
         return pageListWithRelevance;
     }
 
-    public List<Page> getPagesByLemma(Lemma lemma, String saitToSearch) throws SQLException{
+    public List<Page> getPagesByLemma(Lemma lemma, String saitToSearch) {
         List<SearchIndex> indexList = searchIndexRepository.findAllByLemma(lemma);
         List<Page> pages = new ArrayList<>();
         if (saitToSearch == null) {
@@ -140,7 +130,7 @@ public class SearchServiceImpl implements SearchService {
         return pages;
     }
 
-    public List<Page> getPageListByLemmaList(List<Lemma> lemmaList, String sait) throws SQLException{
+    public List<Page> getPageListByLemmaList(List<Lemma> lemmaList, String sait) {
         List<Page> pagesList = getPagesByLemma(lemmaList.get(0), sait);
         for (int i = 1; i < lemmaList.size(); i++) {
             List<Page> pagesForItemLemma = getPagesByLemma(lemmaList.get(i), sait);
@@ -160,7 +150,7 @@ public class SearchServiceImpl implements SearchService {
     return pageArrayList;
     }
 
-    public List<Lemma> getLemmaList(String query) throws SQLException{
+    public List<Lemma> getLemmaList(String query) {
         Map<String, Integer> lemmasStrFromQuery = new LemmaSearch().splitToLemmas(query);
         List<Lemma> lemmasListFromQuery = new ArrayList<>();
         for (String lemmaStr : lemmasStrFromQuery.keySet()) {

@@ -14,7 +14,6 @@ import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 import searchengine.repositories.SearchIndexRepository;
 import searchengine.repositories.WebsiteRepository;
-
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -59,24 +58,13 @@ public class RecursiveSearch extends RecursiveAction {
 
     @ConfigurationProperties(prefix = "jsoup-setting")
     public List<String> pageParser(String link) {
-        try {
-            sleep(1200);
-        } catch (InterruptedException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getMessage());
-            Thread.currentThread().interrupt();
-        }
-        Connection.Response response = null;
-        try {
-            response = Jsoup.connect(link).execute();
-        } catch (IOException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getMessage());
-        }
+        pause(1200);
+        Connection.Response response = getResponse(link);
         int responseCode = response != null ? response.statusCode() : 404;
         if (responseCode == 200) {
-            String content = getContent(response);
-            List<String> linkList = getLinkList(response);
+            Document doc = getDocument(response);
+            String content = getContent(doc);
+            List<String> linkList = getLinkList(doc);
             Map<String, Integer> lemmas = new LemmaSearch().splitToLemmas(content);
             String path = link.substring(website.getUrl().length() - 1);
             try {
@@ -90,8 +78,28 @@ public class RecursiveSearch extends RecursiveAction {
         return new ArrayList<String>();
     }
 
-    public String getContent(Connection.Response response) {
-        String content = "";
+    public void pause(int millis) {
+        try {
+            sleep(millis);
+        } catch (InterruptedException e) {
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    public Connection.Response getResponse(String link) {
+        Connection.Response response = null;
+        try {
+            response = Jsoup.connect(link).execute();
+        } catch (IOException e) {
+            Logger logger = LoggerFactory.getLogger(Application.class);
+            logger.error(e.getMessage());
+        }
+        return response;
+    }
+
+    public Document getDocument(Connection.Response response) {
         Document doc = null;
         try {
             doc = response.parse();
@@ -99,21 +107,19 @@ public class RecursiveSearch extends RecursiveAction {
             Logger logger = LoggerFactory.getLogger(Application.class);
             logger.error(e.getMessage());
         }
+        return doc;
+    }
+
+    public String getContent(Document doc) {
+        String content = "";
         if (doc != null) {
             content = LemmaSearch.clearCodeFromTags(doc.outerHtml());
         }
         return content;
     }
-    public List<String> getLinkList(Connection.Response response) {
-        Document doc = null;
+    public List<String> getLinkList(Document doc) {
         Elements elements = null;
         List<String> linkList = new ArrayList<>();
-        try {
-            doc = response.parse();
-        } catch (IOException e) {
-            Logger logger = LoggerFactory.getLogger(Application.class);
-            logger.error(e.getMessage());
-        }
         if (doc != null) {
             elements = doc.select("a[href]");
         }
