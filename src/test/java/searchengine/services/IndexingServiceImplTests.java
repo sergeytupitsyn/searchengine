@@ -1,8 +1,6 @@
 package searchengine.services;
 
 import org.junit.jupiter.api.*;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
@@ -20,9 +18,7 @@ import searchengine.repositories.WebsiteRepository;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 
 import static org.junit.jupiter.api.Assertions.*;

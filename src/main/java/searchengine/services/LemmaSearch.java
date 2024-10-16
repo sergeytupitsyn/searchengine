@@ -39,8 +39,7 @@ public class LemmaSearch {
             if (word.isBlank()) {
                 continue;
             }
-            List<String> wordMorphInfo = luceneMorphology.getMorphInfo(word);
-            if (isFunctionWords(wordMorphInfo)) {
+            if (isFunctionWords(word)) {
                 continue;
             }
             List<String> wordBaseForms = luceneMorphology.getNormalForms(word);
@@ -56,7 +55,8 @@ public class LemmaSearch {
         return lemmas;
     }
 
-    public boolean isFunctionWords(List<String> wordMorphInfo) {
+    public boolean isFunctionWords(String word) {
+        List<String> wordMorphInfo = luceneMorphology.getMorphInfo(word);
         for (String functionWord : functionWords) {
             if (wordMorphInfo.get(0).toUpperCase().contains(functionWord)) {
                 return true;

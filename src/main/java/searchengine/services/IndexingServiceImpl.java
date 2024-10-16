@@ -176,7 +176,8 @@ public class IndexingServiceImpl implements IndexingService {
         Page newlyIndexedPage = pageRepository.findPageByPathAndWebsite(url.substring(
                 website.getUrl().length() - 1), website);
         removePageDataFromBD(newlyIndexedPage);
-        RecursiveSearch recursiveSearch= new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository, searchIndexRepository, website, site.getUrl());
+        RecursiveSearch recursiveSearch= new RecursiveSearch(pageRepository, websiteRepository, lemmaRepository,
+                searchIndexRepository, website, site.getUrl());
         recursiveSearch.pageParser(url);
         waitingForIndexingToFinish();
     }
